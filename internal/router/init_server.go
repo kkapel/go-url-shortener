@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 )
 
 func Run() {
+	fmt.Println("Версия Go:", runtime.Version())
 	mux := http.NewServeMux()
 	mux.HandleFunc(`/`, apiPagePost)
 	mux.HandleFunc(`/{id}`, apiPageGet)
