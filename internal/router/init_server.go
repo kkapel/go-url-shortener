@@ -8,7 +8,8 @@ import (
 
 func Run() {
 	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, apiPage)
+	mux.HandleFunc(`/`, apiPagePost)
+	mux.HandleFunc(`/{id}`, apiPageGet)
 
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
@@ -17,9 +18,10 @@ func Run() {
 	fmt.Println("Hello world!")
 }
 
-func apiPage(res http.ResponseWriter, req *http.Request) {
+func apiPagePost(res http.ResponseWriter, req *http.Request) {
 
-	if req.Method == http.MethodPost {
+	switch req.Method {
+	case http.MethodPost:
 		// Читаем тело запроса
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -32,6 +34,27 @@ func apiPage(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(http.StatusCreated)
 			res.Write([]byte("http://localhost:8080/EwHXdJfB"))
 		}
+	default:
 
 	}
+}
+
+func apiPageGet(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		id := req.PathValue("id")
+		fmt.Println(id)
+		res.Header().Set("content-type", "text/plain")
+		res.Header().Set("Location", "https://practicum.yandex.ru/")
+		//http code 307
+		res.WriteHeader(http.StatusTemporaryRedirect)
+
+	default:
+		errorResponse(res, req)
+	}
+
+}
+
+func errorResponse(res http.ResponseWriter, req *http.Request) {
+	res.WriteHeader(http.StatusBadRequest)
 }
