@@ -45,9 +45,15 @@ func apiPageGet(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		id := req.PathValue("id")
+
+		// Делаем get-запрос для получения полной ссылки
+		respURL, err := http.Get(id)
+		if err != nil {
+			panic(err)
+		}
 		fmt.Println(id)
 		res.Header().Set("content-type", "text/plain")
-		res.Header().Set("Location", "https://practicum.yandex.ru/")
+		res.Header().Set("Location", respURL.Request.URL.String())
 		//http code 307
 		res.WriteHeader(http.StatusTemporaryRedirect)
 
