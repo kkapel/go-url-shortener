@@ -31,11 +31,11 @@ func apiPagePost(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		if string(body) == "https://practicum.yandex.ru/" {
-			res.Header().Set("content-type", "text/plain")
-			res.WriteHeader(http.StatusCreated)
-			res.Write([]byte("http://localhost:8080/EwHXdJfB"))
-		}
+		res.Header().Set("content-type", "text/plain")
+		res.WriteHeader(http.StatusCreated)
+		res.Write([]byte("http://localhost:8080/EwHXdJfB"))
+		fmt.Println(body)
+
 	default:
 
 	}
