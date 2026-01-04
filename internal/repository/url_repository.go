@@ -6,7 +6,7 @@ func GetURL(url string, returnShortURL bool) string {
 	// Объявим маппу с ссылками
 	// map[shortUrl]LongUrl
 	urlMapShort := make(map[string]string)
-	urlMapShort["EwHXdJfB"] = "https://practicum.yandex.ru/"
+	urlMapShort["EwHXdJfB"] = "http://ljxwukxxrqp26.com"
 
 	// map[LongUrl]ShortUrl
 	urlMapLong := make(map[string]string)
