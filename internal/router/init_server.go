@@ -15,6 +15,7 @@ func Run() {
 
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
+		// Возможно стоит убрать панику
 		panic(err)
 	}
 	fmt.Println("Hello world!")
