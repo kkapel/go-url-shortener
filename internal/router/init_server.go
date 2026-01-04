@@ -57,6 +57,7 @@ func apiPageGet(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Location", respURL.Request.URL.String())
 		//http code 307
 		res.WriteHeader(http.StatusTemporaryRedirect)
+		res.Write([]byte("http://localhost:8080/EwHXdJfB"))
 
 	default:
 		errorResponse(res, req)
