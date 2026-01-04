@@ -51,7 +51,7 @@ func apiPageGet(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		res.Header().Set("content-type", "text/plain")
-		res.Header().Set("Location", LongUrl1)
+		res.Header().Set("Location", LongURL1)
 		//http code 307
 		res.WriteHeader(http.StatusTemporaryRedirect)
 
