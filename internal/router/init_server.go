@@ -7,6 +7,8 @@ import (
 	"runtime"
 )
 
+var LongUrl1 string
+
 func Run() {
 	fmt.Println("Версия Go:", runtime.Version())
 	mux := http.NewServeMux()
@@ -32,6 +34,8 @@ func apiPagePost(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		LongUrl1 = string(body)
+
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
 		res.Write([]byte("http://localhost:8080/EwHXdJfB"))
@@ -47,7 +51,7 @@ func apiPageGet(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		res.Header().Set("content-type", "text/plain")
-		res.Header().Set("Location", "http://hdslxkwn9ih1a.yandex/jad26ykln0nx")
+		res.Header().Set("Location", LongUrl1)
 		//http code 307
 		res.WriteHeader(http.StatusTemporaryRedirect)
 
