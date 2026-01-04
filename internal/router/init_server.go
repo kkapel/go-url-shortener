@@ -47,10 +47,9 @@ func apiPageGet(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		res.Header().Set("content-type", "text/plain")
-		//res.Header().Set("Location", respURL.Request.URL.String())
+		res.Header().Set("Location", "http://hdslxkwn9ih1a.yandex/jad26ykln0nx")
 		//http code 307
 		res.WriteHeader(http.StatusTemporaryRedirect)
-		res.Write([]byte("http://ljxwukxxrqp26.com"))
 
 	default:
 		errorResponse(res, req)
