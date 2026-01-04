@@ -1,6 +1,6 @@
 package repository
 
-func GetUrl(url string, returnShortUrl bool) string {
+func GetURL(url string, returnShortURL bool) string {
 	var result string
 
 	// Объявим маппу с ссылками
@@ -12,12 +12,12 @@ func GetUrl(url string, returnShortUrl bool) string {
 	urlMapLong := make(map[string]string)
 	urlMapLong["https://practicum.yandex.ru/"] = "EwHXdJfB"
 
-	if returnShortUrl {
-		result, _ = urlMapLong[url]
+	if returnShortURL {
+		result = urlMapLong[url]
 		return result
 
 	} else {
-		result, _ = urlMapShort[url]
+		result = urlMapShort[url]
 		return result
 	}
 }
