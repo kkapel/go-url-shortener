@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-var LongUrl1 string
+var LongURL1 string
 
 func Run() {
 	fmt.Println("Версия Go:", runtime.Version())
@@ -34,7 +34,7 @@ func apiPagePost(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		LongUrl1 = string(body)
+		LongURL1 = string(body)
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
