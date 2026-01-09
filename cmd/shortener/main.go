@@ -1,7 +1,12 @@
 package main
 
-import "github.com/kkapel/go-url-shortener/internal/router"
+import (
+	"go-url-shortener/internal/router"
+	"log"
+)
 
 func main() {
-	router.Run()
+	if err := router.Run(); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -1,66 +1,15 @@
 package router
 
 import (
-	"fmt"
-	"io"
+	"go-url-shortener/internal/handler"
 	"net/http"
-	"runtime"
 )
 
-var LongURL1 string
-
-func Run() {
-	fmt.Println("Версия Go:", runtime.Version())
+func Run() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, apiPagePost)
-	mux.HandleFunc(`/{id}`, apiPageGet)
+	mux.HandleFunc(`/`, handler.ApiPagePost)
+	mux.HandleFunc(`/{id}`, handler.ApiPageGet)
 
-	err := http.ListenAndServe(`:8080`, mux)
-	if err != nil {
-		// Возможно стоит убрать панику
-		panic(err)
-	}
-	fmt.Println("Hello world!")
-}
+	return http.ListenAndServe(`:8080`, mux)
 
-func apiPagePost(res http.ResponseWriter, req *http.Request) {
-
-	switch req.Method {
-	case http.MethodPost:
-		// Читаем тело запроса
-		body, err := io.ReadAll(req.Body)
-		if err != nil {
-			// Дописать обработку ошибки
-			return
-		}
-
-		LongURL1 = string(body)
-
-		res.Header().Set("content-type", "text/plain")
-		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte("http://localhost:8080/EwHXdJfB"))
-		fmt.Println(body)
-
-	default:
-
-	}
-}
-
-func apiPageGet(res http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-
-		res.Header().Set("content-type", "text/plain")
-		res.Header().Set("Location", LongURL1)
-		//http code 307
-		res.WriteHeader(http.StatusTemporaryRedirect)
-
-	default:
-		errorResponse(res, req)
-	}
-
-}
-
-func errorResponse(res http.ResponseWriter, req *http.Request) {
-	res.WriteHeader(http.StatusBadRequest)
 }

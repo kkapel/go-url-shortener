@@ -1,3 +1,3 @@
-module github.com/kkapel/go-url-shortener
+module go-url-shortener
 
 go 1.24.11
