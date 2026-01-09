@@ -2,13 +2,16 @@ package handler
 
 import (
 	"fmt"
+	"go-url-shortener/internal/repository"
 	"io"
 	"net/http"
 )
 
-var LongURL1 string
+type Handler struct {
+	Repo *repository.URL
+}
 
-func APIPagePost(res http.ResponseWriter, req *http.Request) {
+func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 
 	switch req.Method {
 	case http.MethodPost:
@@ -19,11 +22,12 @@ func APIPagePost(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		LongURL1 = string(body)
+		longURL := string(body)
+		shortURL := h.Repo.GetShortURL(longURL)
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte("http://localhost:8080/EwHXdJfB"))
+		res.Write([]byte("http://localhost:8080/" + shortURL))
 		fmt.Println(body)
 
 	default:
@@ -31,12 +35,15 @@ func APIPagePost(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func APIPageGet(res http.ResponseWriter, req *http.Request) {
+func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 
+		shortURL := req.PathValue("id")
+		longURL := h.Repo.GetLongURL(shortURL)
+
 		res.Header().Set("content-type", "text/plain")
-		res.Header().Set("Location", LongURL1)
+		res.Header().Set("Location", longURL)
 		//http code 307
 		res.WriteHeader(http.StatusTemporaryRedirect)
 

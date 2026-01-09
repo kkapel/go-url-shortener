@@ -1,23 +1,50 @@
 package repository
 
-func GetURL(url string, returnShortURL bool) string {
-	var result string
+import (
+	"go-url-shortener/internal/service"
+)
 
-	// Объявим маппу с ссылками
-	// map[shortUrl]LongUrl
-	urlMapShort := make(map[string]string)
-	urlMapShort["EwHXdJfB"] = "http://ljxwukxxrqp26.com"
+type URL struct {
+	//[longURL]shortURL
+	data map[string]string
+}
 
-	// map[LongUrl]ShortUrl
-	urlMapLong := make(map[string]string)
-	urlMapLong["https://practicum.yandex.ru/"] = "EwHXdJfB"
+func NewURLRepository() *URL {
+	return &URL{
+		data: make(map[string]string),
+	}
+}
 
-	if returnShortURL {
-		result = urlMapLong[url]
-		return result
+// Получаем короткую URL
+// Если не находим значение в мапе, то генерируем
+func (u *URL) GetShortURL(longURL string) string {
+	var shortURL string
+	val, ok := u.data[longURL]
+
+	// Значения нет, нужно создать новое
+	if !ok {
+		// Генерируем значение из 7 символов
+		shortURL = service.GenerateRandomString(7)
+		// Сохраняем в мапе
+		u.data[longURL] = shortURL
 
 	} else {
-		result = urlMapShort[url]
-		return result
+		shortURL = val
 	}
+
+	return shortURL
+}
+
+func (u *URL) GetLongURL(shortURL string) string {
+	var longURL string
+
+	for key, value := range u.data {
+		if value == shortURL {
+			longURL = key
+			break // Выходим, как только нашли первое совпадение
+		}
+	}
+
+	return longURL
+
 }
