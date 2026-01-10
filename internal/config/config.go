@@ -8,8 +8,8 @@ type Config struct {
 }
 
 func CreateConfig() *Config {
-	host := flag.String("a", "localhost:8080", "host. default value: localhost")
-	getURLHost := flag.String("b", "localhost:8080", "host in getURL response")
+	host := flag.String("a", "http://localhost:8080", "host. default value: localhost")
+	getURLHost := flag.String("b", "http://localhost:8080", "host in getURL response")
 	flag.Parse()
 
 	return &Config{
