@@ -12,7 +12,6 @@ type Handler struct {
 }
 
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
-
 	switch req.Method {
 	case http.MethodPost:
 		// Читаем тело запроса
@@ -41,6 +40,9 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 		shortURL := req.PathValue("id")
 		longURL := h.Repo.GetLongURL(shortURL)
+
+		fmt.Println("shortURL: " + shortURL)
+		fmt.Println("LongURL: " + longURL)
 
 		res.Header().Set("content-type", "text/plain")
 		res.Header().Set("Location", longURL)
