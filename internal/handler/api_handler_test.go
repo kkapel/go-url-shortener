@@ -77,7 +77,7 @@ func TestAPIHandler(t *testing.T) {
 			errPost := result.Body.Close()
 			require.NoError(t, errPost)
 
-			errGet := requestGet.Body.Close()
+			errGet := resultGet.Body.Close()
 			require.NoError(t, errGet)
 
 		})
