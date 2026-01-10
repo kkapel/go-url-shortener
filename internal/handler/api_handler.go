@@ -19,7 +19,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		// Читаем тело запроса
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
-			// Дописать обработку ошибки
+			http.Error(res, "Cannot read request body", http.StatusBadRequest)
 			return
 		}
 
@@ -32,7 +32,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		fmt.Println(body)
 
 	default:
-
+		res.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
