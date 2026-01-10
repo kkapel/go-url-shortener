@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/repository"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 type Handler struct {
 	Repo *repository.URL
+	Cfg  *config.Config
 }
 
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
@@ -26,7 +28,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte("http://localhost:8080/" + shortURL))
+		res.Write([]byte(h.Cfg.GetURLHost + shortURL))
 		fmt.Println(body)
 
 	default:

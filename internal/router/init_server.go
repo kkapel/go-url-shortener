@@ -15,10 +15,11 @@ func Run() error {
 
 	h := &handler.Handler{
 		Repo: repo,
+		Cfg:  cfg,
 	}
 
 	r := chi.NewRouter()
-	r.Post("/", h.APIPagePost)
+	r.Post("/", h.APIPagePost(cfg))
 	r.Get("/{id}", h.APIPageGet)
 
 	return http.ListenAndServe(cfg.Host, r)
