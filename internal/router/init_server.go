@@ -1,6 +1,7 @@
 package router
 
 import (
+	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/handler"
 	"go-url-shortener/internal/repository"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 func Run() error {
 	repo := repository.NewURLRepository()
+	cfg := config.CreateConfig()
 
 	h := &handler.Handler{
 		Repo: repo,
@@ -19,6 +21,5 @@ func Run() error {
 	r.Post("/", h.APIPagePost)
 	r.Get("/{id}", h.APIPageGet)
 
-	return http.ListenAndServe(`:8080`, r)
-
+	return http.ListenAndServe(cfg.Host, r)
 }
