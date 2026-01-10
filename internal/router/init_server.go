@@ -4,6 +4,8 @@ import (
 	"go-url-shortener/internal/handler"
 	"go-url-shortener/internal/repository"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func Run() error {
@@ -13,10 +15,10 @@ func Run() error {
 		Repo: repo,
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, h.APIPagePost)
-	mux.HandleFunc(`/{id}`, h.APIPageGet)
+	r := chi.NewRouter()
+	r.Post("/", h.APIPagePost)
+	r.Get("/{id}", h.APIPageGet)
 
-	return http.ListenAndServe(`:8080`, mux)
+	return http.ListenAndServe(`:8080`, r)
 
 }
