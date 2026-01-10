@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/repository"
 	"net/http"
 	"net/http/httptest"
@@ -40,9 +41,16 @@ func TestAPIHandler(t *testing.T) {
 		},
 	}
 
-	// Создаем репозиторий
+	// Создаем репозиторий и конфиг
 	repo := repository.NewURLRepository()
-	h := &Handler{Repo: repo}
+	testCfg := &config.Config{
+		Host:       "localhost:8080",
+		GetURLHost: "http://localhost:8080",
+	}
+	h := &Handler{
+		Repo: repo,
+		Cfg:  testCfg,
+	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
