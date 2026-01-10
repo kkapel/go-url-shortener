@@ -28,7 +28,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(h.Cfg.GetURLHost + shortURL))
+		res.Write([]byte(h.Cfg.GetURLHost + "/" + shortURL))
 		fmt.Println(body)
 
 	default:
