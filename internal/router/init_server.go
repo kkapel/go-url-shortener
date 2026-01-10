@@ -19,7 +19,7 @@ func Run() error {
 	}
 
 	r := chi.NewRouter()
-	r.Post("/", h.APIPagePost(cfg))
+	r.Post("/", h.APIPagePost)
 	r.Get("/{id}", h.APIPageGet)
 
 	return http.ListenAndServe(cfg.Host, r)
