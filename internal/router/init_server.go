@@ -26,8 +26,8 @@ func Run() error {
 	r := chi.NewRouter()
 	r.Use(loger.RequestLogger)
 	r.Post("/", h.APIPagePost)
-	r.Get("/{id}", h.APIPageGet)
 	r.Post("/api/shorten", h.APIPagePostJSON)
+	r.Get("/{id}", h.APIPageGet)
 
 	return http.ListenAndServe(cfg.Host, r)
 }
