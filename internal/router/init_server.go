@@ -27,6 +27,7 @@ func Run() error {
 	r.Use(loger.RequestLogger)
 	r.Post("/", h.APIPagePost)
 	r.Get("/{id}", h.APIPageGet)
+	r.Post("/api/shorten", h.APIPagePostJson)
 
 	return http.ListenAndServe(cfg.Host, r)
 }
