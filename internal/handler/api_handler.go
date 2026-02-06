@@ -18,7 +18,7 @@ type URL struct {
 	URL string `json:"url"`
 }
 
-type ResultJson struct {
+type ResultJSON struct {
 	Result string `json:"result"`
 }
 
@@ -71,7 +71,7 @@ func (h *Handler) APIPagePostJson(res http.ResponseWriter, req *http.Request) {
 	case http.MethodPost:
 		// Читаем тело запроса
 		var url URL
-		var resultJson ResultJson
+		var resultJSON ResultJSON
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			http.Error(res, "Cannot read request body", http.StatusBadRequest)
@@ -85,8 +85,8 @@ func (h *Handler) APIPagePostJson(res http.ResponseWriter, req *http.Request) {
 		shortURL := h.Repo.GetShortURL(url.URL)
 
 		//Фомрмируем ответ
-		resultJson.Result = shortURL
-		resp, err := json.Marshal(resultJson)
+		resultJSON.Result = shortURL
+		resp, err := json.Marshal(resultJSON)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -94,7 +94,7 @@ func (h *Handler) APIPagePostJson(res http.ResponseWriter, req *http.Request) {
 		}
 
 		res.Header().Set("content-type", "application/json")
-		res.WriteHeader(http.StatusOK)
+		res.WriteHeader(http.StatusCreated)
 		res.Write(resp)
 
 	default:
