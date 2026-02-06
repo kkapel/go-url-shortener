@@ -66,7 +66,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 }
 
-func (h *Handler) APIPagePostJson(res http.ResponseWriter, req *http.Request) {
+func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		// Читаем тело запроса
