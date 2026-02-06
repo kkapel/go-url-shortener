@@ -87,7 +87,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		shortURL := h.Repo.GetShortURL(url.URL)
 
 		//Фомрмируем ответ
-		resultJSON.Result = shortURL
+		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
 		fmt.Println("SHORT_URL:" + shortURL)
 		resp, err := json.Marshal(resultJSON)
 

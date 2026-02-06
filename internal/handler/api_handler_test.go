@@ -154,7 +154,6 @@ func TestAPIHandlerJSON(t *testing.T) {
 			require.NoError(t, err)
 
 			shortURL := response.Result
-			shortURL = test.request + "/" + shortURL
 			fmt.Println("SHORT_URL1:" + shortURL)
 
 			// Теперь выполним Get запрос
