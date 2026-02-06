@@ -77,15 +77,18 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, "Cannot read request body", http.StatusBadRequest)
 			return
 		}
+		defer req.Body.Close()
 
 		if err := json.Unmarshal(body, &url); err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		shortURL := h.Repo.GetShortURL(url.URL)
 
 		//Фомрмируем ответ
 		resultJSON.Result = shortURL
+		fmt.Println("SHORT_URL:" + shortURL)
 		resp, err := json.Marshal(resultJSON)
 
 		if err != nil {
@@ -95,6 +98,8 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 		res.Header().Set("content-type", "application/json")
 		res.WriteHeader(http.StatusCreated)
+		fmt.Println("RESULT:")
+		fmt.Println(string(resp))
 		res.Write(resp)
 
 	default:
