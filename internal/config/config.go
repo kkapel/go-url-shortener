@@ -8,19 +8,21 @@ import (
 )
 
 type ConfigVariable struct {
-	serverAddress string `env:"SERVER_ADDRESS"`
-	baseURL       string `env:"BASE_URL"`
+	serverAddress   string `env:"SERVER_ADDRESS"`
+	baseURL         string `env:"BASE_URL"`
+	fileStoragePath string `env:"FILE_STORAGE_PATH"`
 }
 
 type Config struct {
-	Host       string
-	GetURLHost string
+	Host            string
+	GetURLHost      string
+	FileStoragePath string
 }
 
 func CreateConfig() *Config {
 	//Если указана переменная окружения, то используется она.
 	var configVariable ConfigVariable
-	var resultHost, resultGetURLHost string
+	var resultHost, resultGetURLHost, resultFileStoragePath string
 
 	err := env.Parse(&configVariable)
 	if err != nil {
@@ -29,10 +31,12 @@ func CreateConfig() *Config {
 
 	varHost := configVariable.serverAddress
 	varGetURLHost := configVariable.baseURL
+	varFileStorePath := configVariable.fileStoragePath
 
 	//Если нет переменной окружения, но есть аргумент командной строки (флаг), то используется он.
 	flagHost := flag.String("a", "", "host. default value: localhost")
 	flagGetURLHost := flag.String("b", "", "host in getURL response")
+	flagFileStoragePath := flag.String("f", "", "local file storage path")
 	flag.Parse()
 
 	if varHost != "" {
@@ -51,8 +55,17 @@ func CreateConfig() *Config {
 		resultGetURLHost = "http://localhost:8080"
 	}
 
+	if varFileStorePath != "" {
+		resultFileStoragePath = varFileStorePath
+	} else if *flagFileStoragePath != "" {
+		resultFileStoragePath = *flagFileStoragePath
+	} else {
+		resultFileStoragePath = `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`
+	}
+
 	return &Config{
-		Host:       resultHost,
-		GetURLHost: resultGetURLHost,
+		Host:            resultHost,
+		GetURLHost:      resultGetURLHost,
+		FileStoragePath: resultFileStoragePath,
 	}
 }

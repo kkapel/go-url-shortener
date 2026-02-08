@@ -33,7 +33,11 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		}
 
 		longURL := string(body)
-		shortURL := h.Repo.GetShortURL(longURL)
+		err, shortURL := h.Repo.GetURL(longURL, h.Cfg.FileStoragePath, "short")
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+		}
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
@@ -50,7 +54,12 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		shortURL := req.PathValue("id")
-		longURL := h.Repo.GetLongURL(shortURL)
+		err, longURL := h.Repo.GetURL(shortURL, h.Cfg.FileStoragePath, "long")
+
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
 		fmt.Println("shortURL: " + shortURL)
 		fmt.Println("LongURL: " + longURL)
@@ -84,7 +93,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		shortURL := h.Repo.GetShortURL(url.URL)
+		err, shortURL := h.Repo.GetURL(url.URL, h.Cfg.FileStoragePath, "short")
 
 		//Фомрмируем ответ
 		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL

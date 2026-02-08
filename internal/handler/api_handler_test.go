@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/repository"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"path"
@@ -45,8 +46,9 @@ func TestAPIHandler(t *testing.T) {
 	// Создаем репозиторий и конфиг
 	repo := repository.NewURLRepository()
 	testCfg := &config.Config{
-		Host:       "localhost:8080",
-		GetURLHost: "http://localhost:8080",
+		Host:            "localhost:8080",
+		GetURLHost:      "http://localhost:8080",
+		FileStoragePath: `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`,
 	}
 	h := &Handler{
 		Repo: repo,
@@ -55,6 +57,7 @@ func TestAPIHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			log.Printf("Начинается тест")
 			requestPost := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			postRecorder := httptest.NewRecorder()
 			h.APIPagePost(postRecorder, requestPost)
@@ -126,8 +129,9 @@ func TestAPIHandlerJSON(t *testing.T) {
 	// Создаем репозиторий и конфиг
 	repo := repository.NewURLRepository()
 	testCfg := &config.Config{
-		Host:       "localhost:8080",
-		GetURLHost: "http://localhost:8080",
+		Host:            "localhost:8080",
+		GetURLHost:      "http://localhost:8080",
+		FileStoragePath: `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`,
 	}
 	h := &Handler{
 		Repo: repo,
