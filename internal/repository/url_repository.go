@@ -77,9 +77,9 @@ func (u *URL) GetLongURL(shortURL string) string {
 	  ...
 		]
 */
-func (u *URL) GetURL(inputURL string, filePath string, URLType string) (error, string) {
+func (u *URL) GetURL(inputURL string, filePath string, URLType string) (string, error) {
 	var resultURL string
-	var URL_file_storages []URLFileStorage
+	var URLFileStorages []URLFileStorage
 	log.Printf("%s", "Переменная filepath в функции GetURL:W"+filePath)
 
 	// открываем файл
@@ -88,16 +88,16 @@ func (u *URL) GetURL(inputURL string, filePath string, URLType string) (error, s
 	file, err := os.OpenFile(filePath, flag, 0666)
 
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	errDecode := decoder.Decode(&URL_file_storages)
+	errDecode := decoder.Decode(&URLFileStorages)
 
 	if errDecode != nil && errDecode != io.EOF {
-		return err, ""
+		return "", err
 	}
 
 	// логика, если ищем shortURL
@@ -105,9 +105,9 @@ func (u *URL) GetURL(inputURL string, filePath string, URLType string) (error, s
 		// файл не пустой
 		// ищем short_url
 		if errDecode != io.EOF {
-			for _, line := range URL_file_storages {
+			for _, line := range URLFileStorages {
 				if line.LongURL == inputURL {
-					return nil, line.ShortURL
+					return line.ShortURL, nil
 				}
 			}
 		}
@@ -116,17 +116,17 @@ func (u *URL) GetURL(inputURL string, filePath string, URLType string) (error, s
 		// Генерируем значение из 7 символов
 		resultURL = service.GenerateRandomString(7)
 		//Записываем новое значение в файл
-		err = writeToFile(URL_file_storages, resultURL, inputURL, file)
+		err = writeToFile(URLFileStorages, resultURL, inputURL, file)
 
 		if err != nil {
-			return err, ""
+			return "", err
 		}
 
 	} else if URLType == "long" {
 		// файл не пустой
 		// ищем short_url
 		if errDecode != io.EOF {
-			for _, line := range URL_file_storages {
+			for _, line := range URLFileStorages {
 				if line.ShortURL == inputURL {
 					resultURL = line.LongURL
 				}
@@ -136,10 +136,10 @@ func (u *URL) GetURL(inputURL string, filePath string, URLType string) (error, s
 
 	if resultURL == "" {
 		error := errors.New("возникла ошибка при получении URL")
-		return error, ""
+		return "", error
 	}
 
-	return nil, resultURL
+	return resultURL, nil
 
 }
 
