@@ -8,9 +8,9 @@ import (
 )
 
 type ConfigVariable struct {
-	serverAddress   string `env:"SERVER_ADDRESS"`
-	baseURL         string `env:"BASE_URL"`
-	fileStoragePath string `env:"FILE_STORAGE_PATH"`
+	ServerAddress   string `env:"SERVER_ADDRESS"`
+	BaseURL         string `env:"BASE_URL"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 }
 
 type Config struct {
@@ -29,9 +29,9 @@ func CreateConfig() *Config {
 		log.Fatal(err)
 	}
 
-	varHost := configVariable.serverAddress
-	varGetURLHost := configVariable.baseURL
-	varFileStorePath := configVariable.fileStoragePath
+	varHost := configVariable.ServerAddress
+	varGetURLHost := configVariable.BaseURL
+	varFileStorePath := configVariable.FileStoragePath
 
 	//Если нет переменной окружения, но есть аргумент командной строки (флаг), то используется он.
 	flagHost := flag.String("a", "", "host. default value: localhost")
