@@ -95,6 +95,11 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 		shortURL, err := h.Repo.GetURL(url.URL, h.Cfg.FileStoragePath, "short")
 
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		//Фомрмируем ответ
 		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
 		fmt.Println("SHORT_URL:" + shortURL)
