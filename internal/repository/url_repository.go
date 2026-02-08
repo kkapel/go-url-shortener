@@ -80,7 +80,7 @@ func (u *URL) GetLongURL(shortURL string) string {
 func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, string) {
 	var result_URL string
 	var URL_file_storages []URL_file_storage
-	log.Printf("Переменная filepath в функции GetURL:W" + filePath)
+	log.Printf("%s", "Переменная filepath в функции GetURL:W"+filePath)
 
 	// открываем файл
 	// если его нет, то создаем
