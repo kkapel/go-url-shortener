@@ -77,8 +77,8 @@ func (u *URL) GetLongURL(shortURL string) string {
 	  ...
 		]
 */
-func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, string) {
-	var result_URL string
+func (u *URL) GetURL(inputURL string, filePath string, URLType string) (error, string) {
+	var resultURL string
 	var URL_file_storages []URLFileStorage
 	log.Printf("%s", "Переменная filepath в функции GetURL:W"+filePath)
 
@@ -106,7 +106,7 @@ func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, 
 		// ищем short_url
 		if errDecode != io.EOF {
 			for _, line := range URL_file_storages {
-				if line.LongURL == input_URL {
+				if line.LongURL == inputURL {
 					return nil, line.ShortURL
 				}
 			}
@@ -114,9 +114,9 @@ func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, 
 
 		// Если прошлись по всему файлу и не нашли short_url или файл был пустой
 		// Генерируем значение из 7 символов
-		result_URL = service.GenerateRandomString(7)
+		resultURL = service.GenerateRandomString(7)
 		//Записываем новое значение в файл
-		err = writeToFile(URL_file_storages, result_URL, input_URL, file)
+		err = writeToFile(URL_file_storages, resultURL, inputURL, file)
 
 		if err != nil {
 			return err, ""
@@ -127,23 +127,23 @@ func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, 
 		// ищем short_url
 		if errDecode != io.EOF {
 			for _, line := range URL_file_storages {
-				if line.ShortURL == input_URL {
-					result_URL = line.LongURL
+				if line.ShortURL == inputURL {
+					resultURL = line.LongURL
 				}
 			}
 		}
 	}
 
-	if result_URL == "" {
+	if resultURL == "" {
 		error := errors.New("возникла ошибка при получении URL")
 		return error, ""
 	}
 
-	return nil, result_URL
+	return nil, resultURL
 
 }
 
-func writeToFile(URL_file_storages []URLFileStorage, shortURL string, longURL string, file *os.File) error {
+func writeToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, file *os.File) error {
 
 	// Создадим новый элемент в JSON
 	newItem := URLFileStorage{
@@ -153,7 +153,7 @@ func writeToFile(URL_file_storages []URLFileStorage, shortURL string, longURL st
 	}
 
 	// добавим новое значение в слайс
-	URL_file_storages = append(URL_file_storages, newItem)
+	URLFileStorages = append(URLFileStorages, newItem)
 
 	// очистим файл и переведем курсор
 	file.Truncate(0)
@@ -161,5 +161,5 @@ func writeToFile(URL_file_storages []URLFileStorage, shortURL string, longURL st
 
 	encoder := json.NewEncoder(file)
 
-	return encoder.Encode(URL_file_storages)
+	return encoder.Encode(URLFileStorages)
 }
