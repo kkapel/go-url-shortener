@@ -20,10 +20,10 @@ func NewURLRepository() *URL {
 	}
 }
 
-type URL_file_storage struct {
-	UUID      uint   `json:"uuid"`
-	Short_URL string `json:"short_url"`
-	Long_URL  string `json:"long_url"`
+type URLFileStorage struct {
+	UUID     uint   `json:"uuid"`
+	ShortURL string `json:"short_url"`
+	LongURL  string `json:"long_url"`
 }
 
 /*
@@ -79,7 +79,7 @@ func (u *URL) GetLongURL(shortURL string) string {
 */
 func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, string) {
 	var result_URL string
-	var URL_file_storages []URL_file_storage
+	var URL_file_storages []URLFileStorage
 	log.Printf("%s", "Переменная filepath в функции GetURL:W"+filePath)
 
 	// открываем файл
@@ -106,8 +106,8 @@ func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, 
 		// ищем short_url
 		if errDecode != io.EOF {
 			for _, line := range URL_file_storages {
-				if line.Long_URL == input_URL {
-					return nil, line.Short_URL
+				if line.LongURL == input_URL {
+					return nil, line.ShortURL
 				}
 			}
 		}
@@ -127,15 +127,15 @@ func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, 
 		// ищем short_url
 		if errDecode != io.EOF {
 			for _, line := range URL_file_storages {
-				if line.Short_URL == input_URL {
-					result_URL = line.Long_URL
+				if line.ShortURL == input_URL {
+					result_URL = line.LongURL
 				}
 			}
 		}
 	}
 
 	if result_URL == "" {
-		error := errors.New("Возникла ошибка при получении URL")
+		error := errors.New("возникла ошибка при получении URL")
 		return error, ""
 	}
 
@@ -143,13 +143,13 @@ func (u *URL) GetURL(input_URL string, filePath string, URLType string) (error, 
 
 }
 
-func writeToFile(URL_file_storages []URL_file_storage, shortURL string, longURL string, file *os.File) error {
+func writeToFile(URL_file_storages []URLFileStorage, shortURL string, longURL string, file *os.File) error {
 
 	// Создадим новый элемент в JSON
-	newItem := URL_file_storage{
-		UUID:      1,
-		Short_URL: shortURL,
-		Long_URL:  longURL,
+	newItem := URLFileStorage{
+		UUID:     1,
+		ShortURL: shortURL,
+		LongURL:  longURL,
 	}
 
 	// добавим новое значение в слайс
