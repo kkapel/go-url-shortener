@@ -63,6 +63,10 @@ func CreateConfig() *Config {
 		resultFileStoragePath = `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`
 	}
 
+	log.Printf("%s", "Переменная varFileStorePath в функции CreateConfig: "+varFileStorePath)
+	log.Printf("%s", "Переменная flagFileStoragePath в функции CreateConfig: "+*flagFileStoragePath)
+	log.Printf("%s", "Переменная resultFileStoragePath в функции CreateConfig: "+resultFileStoragePath)
+
 	return &Config{
 		Host:            resultHost,
 		GetURLHost:      resultGetURLHost,
