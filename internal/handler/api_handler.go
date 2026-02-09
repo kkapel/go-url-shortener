@@ -34,7 +34,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		}
 
 		longURL := string(body)
-		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short")
+		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Cfg.Mutex)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -54,7 +54,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		shortURL := req.PathValue("id")
-		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long")
+		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Cfg.Mutex)
 
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
@@ -93,7 +93,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short")
+		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Cfg.Mutex)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)

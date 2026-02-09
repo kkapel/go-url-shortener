@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"log"
+	"sync"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -17,6 +18,7 @@ type Config struct {
 	Host            string
 	GetURLHost      string
 	FileStoragePath string
+	Mutex           sync.Mutex
 }
 
 func CreateConfig() *Config {
