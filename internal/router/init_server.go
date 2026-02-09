@@ -6,6 +6,7 @@ import (
 	"go-url-shortener/internal/handler"
 	"go-url-shortener/internal/loger"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -22,11 +23,20 @@ func Run() error {
 	}
 
 	r := chi.NewRouter()
+
+	srv := &http.Server{
+		Addr:         cfg.Host,
+		Handler:      r,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
 	r.Post("/", h.APIPagePost)
 	r.Post("/api/shorten", h.APIPagePostJSON)
 	r.Get("/{id}", h.APIPageGet)
 
-	return http.ListenAndServe(cfg.Host, r)
+	return srv.ListenAndServe()
 }
