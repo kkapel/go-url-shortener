@@ -3,9 +3,11 @@ package repository
 import (
 	"encoding/json"
 	"errors"
+	"go-url-shortener/internal/loger"
 	"io"
-	"log"
 	"os"
+
+	"go.uber.org/zap"
 )
 
 type URL struct {
@@ -84,7 +86,7 @@ func (u *URL) GetLongURL(shortURL string) string {
 func GetURLFromFile(inputURL string, filePath string, URLType string) (string, []URLFileStorage, error) {
 	var resultURL string
 	var URLFileStorages []URLFileStorage
-	log.Printf("%s", "Переменная filepath в функции GetURLFromFile"+filePath)
+	loger.Log.Info("GetURLFromFile", zap.String("filePath", filePath))
 
 	// открываем файл
 	// если его нет, то создаем
@@ -112,7 +114,7 @@ func GetURLFromFile(inputURL string, filePath string, URLType string) (string, [
 		if errDecode != io.EOF {
 			for _, line := range URLFileStorages {
 				if line.LongURL == inputURL {
-					log.Printf("%s", "нашли значение short_url в функции GetURLFromFile: "+line.ShortURL)
+					loger.Log.Info("GetURLFromFile", zap.String("нашли значение short_url", line.ShortURL))
 					return line.ShortURL, URLFileStorages, nil
 				}
 			}
@@ -121,7 +123,7 @@ func GetURLFromFile(inputURL string, filePath string, URLType string) (string, [
 	case "long":
 		// файл не пустой
 		// ищем long_url
-		log.Printf("%s", "функции GetURLFromFile. Ищем в файле long_url. Исходный short_url: "+inputURL)
+		loger.Log.Info("GetURLFromFile", zap.String("Ищем в файле long_url. Исходный short_url", inputURL))
 		if errDecode != io.EOF {
 			for _, line := range URLFileStorages {
 				if line.ShortURL == inputURL {
@@ -143,7 +145,9 @@ func GetURLFromFile(inputURL string, filePath string, URLType string) (string, [
 
 func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string) error {
 
-	log.Printf("%s", "функция WriteToFile. Добавляем shortURL: "+shortURL+" long_url: "+longURL)
+	loger.Log.Info("WriteToFile",
+		zap.String("Добавляем shortURL", shortURL),
+		zap.String("longUrl", longURL))
 	// открываем файл
 	// если его нет, то создаем
 	flag := os.O_RDWR | os.O_CREATE | os.O_APPEND

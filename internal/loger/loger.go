@@ -1,7 +1,6 @@
 package loger
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -58,7 +57,6 @@ func Initialize(level string) error {
 
 func RequestLogger(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Check")
 		start := time.Now()
 
 		responseData := &responseData{

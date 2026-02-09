@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-url-shortener/internal/config"
+	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/service"
 	"io"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -41,7 +43,6 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
 		res.Write([]byte(h.Cfg.GetURLHost + "/" + shortURL))
-		fmt.Println(body)
 
 	default:
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -60,8 +61,8 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		fmt.Println("shortURL: " + shortURL)
-		fmt.Println("LongURL: " + longURL)
+		loger.Log.Info("APIPageGet", zap.String("shortURL", shortURL))
+		loger.Log.Info("APIPageGet", zap.String("LongURL", longURL))
 
 		res.Header().Set("content-type", "text/plain")
 		res.Header().Set("Location", longURL)
@@ -101,7 +102,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 		//Фомрмируем ответ
 		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
-		fmt.Println("SHORT_URL:" + shortURL)
+		loger.Log.Info("APIPagePostJSON", zap.String("short_url", shortURL))
 		resp, err := json.Marshal(resultJSON)
 
 		if err != nil {
@@ -111,8 +112,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 		res.Header().Set("content-type", "application/json")
 		res.WriteHeader(http.StatusCreated)
-		fmt.Println("RESULT:")
-		fmt.Println(string(resp))
+		loger.Log.Info("APIPagePostJSON", zap.String("result", string(resp)))
 		res.Write(resp)
 
 	default:

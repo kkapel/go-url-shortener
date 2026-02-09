@@ -2,9 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"go-url-shortener/internal/config"
-	"log"
+	"go-url-shortener/internal/loger"
 	"net/http"
 	"net/http/httptest"
 	"path"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestAPIHandler(t *testing.T) {
@@ -54,7 +54,7 @@ func TestAPIHandler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			log.Printf("Начинается тест")
+			loger.Log.Info("Начинается тест")
 			requestPost := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
 			postRecorder := httptest.NewRecorder()
 			h.APIPagePost(postRecorder, requestPost)
@@ -67,7 +67,8 @@ func TestAPIHandler(t *testing.T) {
 			// Запоминаем короткий URL для Get-запроса
 			shortURL := postRecorder.Body.String()
 
-			fmt.Println(shortURL)
+			loger.Log.Info("доп.информация для теста",
+				zap.String("shortURL", shortURL))
 
 			// Теперь выполним Get запрос
 			requestGet := httptest.NewRequest(http.MethodGet, shortURL, nil)
@@ -142,8 +143,7 @@ func TestAPIHandlerJSON(t *testing.T) {
 			h.APIPagePostJSON(postRecorder, requestPost)
 
 			result := postRecorder.Result()
-			fmt.Println("result APIPagePostJSON:")
-			fmt.Println(result.Body)
+			loger.Log.Info("result APIPagePostJSON", zap.Any("result APIPagePostJSON", result.Body))
 
 			assert.Equal(t, test.wantpost.code, result.StatusCode)
 			assert.Equal(t, test.wantpost.contentType, result.Header.Get("Content-Type"))
@@ -153,7 +153,7 @@ func TestAPIHandlerJSON(t *testing.T) {
 			require.NoError(t, err)
 
 			shortURL := response.Result
-			fmt.Println("SHORT_URL1:" + shortURL)
+			loger.Log.Info("test info", zap.String("short_url", shortURL))
 
 			// Теперь выполним Get запрос
 			requestGet := httptest.NewRequest(http.MethodGet, shortURL, nil)
