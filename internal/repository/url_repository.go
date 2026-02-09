@@ -3,7 +3,6 @@ package repository
 import (
 	"encoding/json"
 	"errors"
-	"go-url-shortener/internal/service"
 	"io"
 	"log"
 	"os"
@@ -77,18 +76,23 @@ func (u *URL) GetLongURL(shortURL string) string {
 	  ...
 		]
 */
-func (u *URL) GetURL(inputURL string, filePath string, URLType string) (string, error) {
+
+// Возвращает URL из файла
+// Если shortURL не найден, возвращается пустая строка
+// Если LongURL не найден, возращается ошибка
+// Возможные значения URLType: long, short
+func GetURLFromFile(inputURL string, filePath string, URLType string) (string, []URLFileStorage, error) {
 	var resultURL string
 	var URLFileStorages []URLFileStorage
-	log.Printf("%s", "Переменная filepath в функции GetURL:W"+filePath)
+	log.Printf("%s", "Переменная filepath в функции GetURLFromFile"+filePath)
 
 	// открываем файл
 	// если его нет, то создаем
-	flag := os.O_RDWR | os.O_CREATE | os.O_APPEND
+	flag := os.O_RDONLY | os.O_CREATE
 	file, err := os.OpenFile(filePath, flag, 0666)
 
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	defer file.Close()
@@ -97,53 +101,59 @@ func (u *URL) GetURL(inputURL string, filePath string, URLType string) (string, 
 	errDecode := decoder.Decode(&URLFileStorages)
 
 	if errDecode != nil && errDecode != io.EOF {
-		return "", err
+		return "", nil, err
 	}
 
 	// логика, если ищем shortURL
-	if URLType == "short" {
+	switch URLType {
+	case "short":
 		// файл не пустой
 		// ищем short_url
 		if errDecode != io.EOF {
 			for _, line := range URLFileStorages {
 				if line.LongURL == inputURL {
-					return line.ShortURL, nil
+					log.Printf("%s", "нашли значение short_url в функции GetURLFromFile: "+line.ShortURL)
+					return line.ShortURL, URLFileStorages, nil
 				}
 			}
 		}
 
-		// Если прошлись по всему файлу и не нашли short_url или файл был пустой
-		// Генерируем значение из 7 символов
-		resultURL = service.GenerateRandomString(7)
-		//Записываем новое значение в файл
-		err = writeToFile(URLFileStorages, resultURL, inputURL, file)
-
-		if err != nil {
-			return "", err
-		}
-
-	} else if URLType == "long" {
+	case "long":
 		// файл не пустой
-		// ищем short_url
+		// ищем long_url
+		log.Printf("%s", "функции GetURLFromFile. Ищем в файле long_url. Исходный short_url: "+inputURL)
 		if errDecode != io.EOF {
 			for _, line := range URLFileStorages {
 				if line.ShortURL == inputURL {
 					resultURL = line.LongURL
+					return resultURL, URLFileStorages, nil
 				}
 			}
+		} else {
+			// Для long_url отсутствие в файле считаем ошибкой
+			error := errors.New("длинный url не найден")
+			return "", nil, error
 		}
 	}
 
-	if resultURL == "" {
-		error := errors.New("возникла ошибка при получении URL")
-		return "", error
-	}
-
-	return resultURL, nil
+	// Если не нашли в файле, то возращаем пустое значение строки
+	return "", URLFileStorages, nil
 
 }
 
-func writeToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, file *os.File) error {
+func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string) error {
+
+	log.Printf("%s", "функция WriteToFile. Добавляем shortURL: "+shortURL+" long_url: "+longURL)
+	// открываем файл
+	// если его нет, то создаем
+	flag := os.O_RDWR | os.O_CREATE | os.O_APPEND
+	file, err := os.OpenFile(filePath, flag, 0666)
+
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
 
 	// Создадим новый элемент в JSON
 	newItem := URLFileStorage{
