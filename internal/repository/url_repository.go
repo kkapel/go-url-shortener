@@ -165,14 +165,14 @@ func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL stri
 	defer file.Close()
 
 	//Получим новый UUID
-	var UUID_new uint
+	var UUIDNew uint
 	if len(URLFileStorages) > 0 {
-		UUID_new = URLFileStorages[len(URLFileStorages)-1].UUID + 1
+		UUIDNew = URLFileStorages[len(URLFileStorages)-1].UUID + 1
 	}
 
 	// Создадим новый элемент в JSON
 	newItem := URLFileStorage{
-		UUID:     UUID_new,
+		UUID:     UUIDNew,
 		ShortURL: shortURL,
 		LongURL:  longURL,
 	}
