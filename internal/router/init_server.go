@@ -5,6 +5,7 @@ import (
 	"go-url-shortener/internal/encoding"
 	"go-url-shortener/internal/handler"
 	"go-url-shortener/internal/loger"
+	"go-url-shortener/internal/repository"
 	"net/http"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 
 func Run() error {
 	cfg := config.CreateConfig()
+	repository := repository.CreateRepository()
 	if err := loger.Initialize("INFO"); err != nil {
 		return err
 	}
@@ -20,6 +22,7 @@ func Run() error {
 
 	h := &handler.Handler{
 		Cfg: cfg,
+		Rep: repository,
 	}
 
 	r := chi.NewRouter()

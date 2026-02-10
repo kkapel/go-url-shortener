@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/loger"
+	"go-url-shortener/internal/repository"
 	"net/http"
 	"net/http/httptest"
 	"path"
@@ -50,6 +51,7 @@ func TestAPIHandler(t *testing.T) {
 	}
 	h := &Handler{
 		Cfg: testCfg,
+		Rep: repository.CreateRepository(),
 	}
 
 	for _, test := range tests {
@@ -132,6 +134,7 @@ func TestAPIHandlerJSON(t *testing.T) {
 	}
 	h := &Handler{
 		Cfg: testCfg,
+		Rep: repository.CreateRepository(),
 	}
 
 	for _, test := range tests {

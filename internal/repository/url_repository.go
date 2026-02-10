@@ -16,6 +16,10 @@ type URL struct {
 	data map[string]string
 }
 
+type Repsitory struct {
+	Mu sync.Mutex
+}
+
 func NewURLRepository() *URL {
 	return &URL{
 		data: make(map[string]string),
@@ -79,6 +83,12 @@ func (u *URL) GetLongURL(shortURL string) string {
 	  ...
 		]
 */
+
+func CreateRepository() *Repsitory {
+	return &Repsitory{
+		Mu: sync.Mutex{},
+	}
+}
 
 // Возвращает URL из файла
 // Если shortURL не найден, возвращается пустая строка

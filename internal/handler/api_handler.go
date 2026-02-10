@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/loger"
+	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"io"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 
 type Handler struct {
 	Cfg *config.Config
+	Rep *repository.Repsitory
 }
 
 type URL struct {
@@ -34,7 +36,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		}
 
 		longURL := string(body)
-		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Cfg.Mutex)
+		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -54,7 +56,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		shortURL := req.PathValue("id")
-		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Cfg.Mutex)
+		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu)
 
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
@@ -93,7 +95,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Cfg.Mutex)
+		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
