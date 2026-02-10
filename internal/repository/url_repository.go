@@ -154,7 +154,7 @@ func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL stri
 		zap.String("longUrl", longURL))
 	// открываем файл
 	// если его нет, то создаем
-	flag := os.O_RDWR | os.O_CREATE | os.O_APPEND
+	flag := os.O_RDWR | os.O_CREATE
 	file, err := os.OpenFile(filePath, flag, 0666)
 
 	if err != nil {
@@ -164,9 +164,15 @@ func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL stri
 	defer mu.Unlock()
 	defer file.Close()
 
+	//Получим новый UUID
+	var UUID_new uint
+	if len(URLFileStorages) > 0 {
+		UUID_new = URLFileStorages[len(URLFileStorages)-1].UUID + 1
+	}
+
 	// Создадим новый элемент в JSON
 	newItem := URLFileStorage{
-		UUID:     1,
+		UUID:     UUID_new,
 		ShortURL: shortURL,
 		LongURL:  longURL,
 	}

@@ -38,7 +38,7 @@ func TestAPIHandler(t *testing.T) {
 				contentType: "text/plain",
 			},
 			request: "http://localhost:8080",
-			body:    "https://practicum.yandex.ru/",
+			body:    "https://practicum.yandex/",
 		},
 	}
 
@@ -119,8 +119,8 @@ func TestAPIHandlerJSON(t *testing.T) {
 				contentType: "text/plain",
 			},
 			request:    "http://localhost:8080",
-			body:       `{"url": "https://practicum.yandex.ru/"}`,
-			bodyResult: "https://practicum.yandex.ru/",
+			body:       `{"url": "https://practicum.yandex/"}`,
+			bodyResult: "https://practicum.yandex/",
 		},
 	}
 

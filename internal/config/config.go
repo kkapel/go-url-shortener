@@ -62,6 +62,8 @@ func CreateConfig() *Config {
 	} else if *flagFileStoragePath != "" {
 		resultFileStoragePath = *flagFileStoragePath
 	} else {
+		//хардкорный путь задан согласно заданию iter9:
+		//Если нет ни переменной окружения, ни флага, то используется значение по умолчанию.
 		resultFileStoragePath = `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`
 	}
 
