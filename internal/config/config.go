@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"log"
+	"path/filepath"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -62,7 +63,7 @@ func CreateConfig() *Config {
 	} else {
 		//хардкорный путь задан согласно заданию iter9:
 		//Если нет ни переменной окружения, ни флага, то используется значение по умолчанию.
-		resultFileStoragePath = `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`
+		resultFileStoragePath = filepath.Join(".", "storage.txt")
 	}
 
 	log.Printf("%s", "Переменная varFileStorePath в функции CreateConfig: "+varFileStorePath)

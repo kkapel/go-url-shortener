@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -47,7 +48,7 @@ func TestAPIHandler(t *testing.T) {
 	testCfg := &config.Config{
 		Host:            "localhost:8080",
 		GetURLHost:      "http://localhost:8080",
-		FileStoragePath: `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`,
+		FileStoragePath: filepath.Join(".", "storage.txt"),
 	}
 	h := &Handler{
 		Cfg: testCfg,
@@ -130,7 +131,7 @@ func TestAPIHandlerJSON(t *testing.T) {
 	testCfg := &config.Config{
 		Host:            "localhost:8080",
 		GetURLHost:      "http://localhost:8080",
-		FileStoragePath: `D:\Learning\Go\go-url-shortener\go-url-shortener\FILE_STORAGE_PATH.txt`,
+		FileStoragePath: filepath.Join(".", "storage.txt"),
 	}
 	h := &Handler{
 		Cfg: testCfg,
