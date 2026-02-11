@@ -102,6 +102,8 @@ func GetURLFromFile(inputURL string, filePath string, URLType string, mu *sync.M
 	// открываем файл
 	// если его нет, то создаем
 	mu.Lock()
+	defer mu.Unlock()
+
 	flag := os.O_RDONLY | os.O_CREATE
 	file, err := os.OpenFile(filePath, flag, 0666)
 
@@ -109,7 +111,6 @@ func GetURLFromFile(inputURL string, filePath string, URLType string, mu *sync.M
 		return "", nil, err
 	}
 
-	defer mu.Unlock()
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
@@ -159,6 +160,7 @@ func GetURLFromFile(inputURL string, filePath string, URLType string, mu *sync.M
 func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string, mu *sync.Mutex) error {
 
 	mu.Lock()
+	defer mu.Unlock()
 	loger.Log.Info("WriteToFile",
 		zap.String("Добавляем shortURL", shortURL),
 		zap.String("longUrl", longURL))
@@ -171,7 +173,6 @@ func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL stri
 		return err
 	}
 
-	defer mu.Unlock()
 	defer file.Close()
 
 	//Получим новый UUID
