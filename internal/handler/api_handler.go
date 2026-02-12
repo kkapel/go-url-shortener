@@ -1,16 +1,28 @@
 package handler
 
 import (
-	"fmt"
+	"encoding/json"
 	"go-url-shortener/internal/config"
+	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
+	"go-url-shortener/internal/service"
 	"io"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 type Handler struct {
-	Repo *repository.URL
-	Cfg  *config.Config
+	Cfg *config.Config
+	Rep *repository.Repsitory
+}
+
+type URL struct {
+	URL string `json:"url"`
+}
+
+type ResultJSON struct {
+	Result string `json:"result"`
 }
 
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
@@ -24,12 +36,15 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		}
 
 		longURL := string(body)
-		shortURL := h.Repo.GetShortURL(longURL)
+		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu)
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+		}
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
 		res.Write([]byte(h.Cfg.GetURLHost + "/" + shortURL))
-		fmt.Println(body)
 
 	default:
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -41,10 +56,15 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		shortURL := req.PathValue("id")
-		longURL := h.Repo.GetLongURL(shortURL)
+		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu)
 
-		fmt.Println("shortURL: " + shortURL)
-		fmt.Println("LongURL: " + longURL)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		loger.Log.Info("APIPageGet", zap.String("shortURL", shortURL))
+		loger.Log.Info("APIPageGet", zap.String("LongURL", longURL))
 
 		res.Header().Set("content-type", "text/plain")
 		res.Header().Set("Location", longURL)
@@ -52,11 +72,56 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusTemporaryRedirect)
 
 	default:
-		errorResponse(res, req)
+		errorResponse(res)
 	}
 
 }
 
-func errorResponse(res http.ResponseWriter, req *http.Request) {
+func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		// Читаем тело запроса
+		var url URL
+		var resultJSON ResultJSON
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			http.Error(res, "Cannot read request body", http.StatusBadRequest)
+			return
+		}
+		defer req.Body.Close()
+
+		if err := json.Unmarshal(body, &url); err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu)
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		//Фомрмируем ответ
+		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
+		loger.Log.Info("APIPagePostJSON", zap.String("short_url", shortURL))
+		resp, err := json.Marshal(resultJSON)
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		res.Header().Set("content-type", "application/json")
+		res.WriteHeader(http.StatusCreated)
+		loger.Log.Info("APIPagePostJSON", zap.String("result", string(resp)))
+		res.Write(resp)
+
+	default:
+		errorResponse(res)
+	}
+}
+
+func errorResponse(res http.ResponseWriter) {
 	res.WriteHeader(http.StatusBadRequest)
 }
