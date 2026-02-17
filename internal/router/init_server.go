@@ -14,7 +14,11 @@ import (
 
 func Run() error {
 	cfg := config.CreateConfig()
-	repository := repository.CreateRepository()
+	repo := repository.CreateRepository()
+	dbRepository := repository.InitDB(cfg.DBString)
+	// Закрываем БД-соединение
+	defer dbRepository.Close()
+
 	if err := loger.Initialize("INFO"); err != nil {
 		return err
 	}
@@ -22,7 +26,8 @@ func Run() error {
 
 	h := &handler.Handler{
 		Cfg: cfg,
-		Rep: repository,
+		Rep: repo,
+		DB:  dbRepository,
 	}
 
 	r := chi.NewRouter()
@@ -40,6 +45,7 @@ func Run() error {
 	r.Post("/", h.APIPagePost)
 	r.Post("/api/shorten", h.APIPagePostJSON)
 	r.Get("/{id}", h.APIPageGet)
+	r.Get("/ping", h.APIGetPing)
 
 	return srv.ListenAndServe()
 }

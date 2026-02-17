@@ -15,6 +15,7 @@ import (
 type Handler struct {
 	Cfg *config.Config
 	Rep *repository.Repsitory
+	DB  *repository.DB
 }
 
 type URL struct {
@@ -120,6 +121,21 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 	default:
 		errorResponse(res)
 	}
+}
+
+func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+
+		if err := h.DB.CheckConnect(); err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+		}
+		res.WriteHeader(http.StatusOK)
+
+	default:
+		errorResponse(res)
+	}
+
 }
 
 func errorResponse(res http.ResponseWriter) {
