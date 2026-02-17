@@ -12,8 +12,8 @@ type DB struct {
 	db *sql.DB
 }
 
-func InitDB(db_connect string) *DB {
-	db, err := sql.Open("pgx", db_connect)
+func InitDB(dbConnect string) *DB {
+	db, err := sql.Open("pgx", dbConnect)
 	if err != nil {
 		// убрать панику
 		panic(err)
