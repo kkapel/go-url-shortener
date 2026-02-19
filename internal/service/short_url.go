@@ -18,7 +18,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	// В противном случае храним записи в файле
 	// В противном случае храним значения локально
 
-	if databaseDsn != "" {
+	if db != nil && databaseDsn != "" {
 		URL, err = db.GetURLFromDB(req.Context(), inputURL, URLType)
 	} else if filePath != "" {
 		URL, fileStorage, err = repository.GetURLFromFile(inputURL, filePath, URLType, mu)
