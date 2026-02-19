@@ -40,7 +40,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	if URLType == "short" && URL == "" {
 		URL = GenerateRandomString(7)
 		if databaseDsn != "" {
-			err = db.InsertIntoDB(req.Context(), URL, URLType)
+			err = db.InsertIntoDB(req.Context(), URL, inputURL)
 		} else if filePath != "" {
 			repository.WriteToFile(fileStorage, URL, inputURL, filePath, mu)
 		} else {
