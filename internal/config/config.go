@@ -49,7 +49,7 @@ func CreateConfig() *Config {
 	} else if *flagHost != "" {
 		resultHost = *flagHost
 	} else {
-		resultHost = "localhost:8080"
+		resultHost = ""
 	}
 
 	if varGetURLHost != "" {
