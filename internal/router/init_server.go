@@ -15,7 +15,7 @@ import (
 func Run() error {
 	cfg := config.CreateConfig()
 	repo := repository.CreateRepository()
-	url_local := repository.NewURLRepository()
+	urlLocal := repository.NewURLRepository()
 	dbRepository := repository.InitDB(cfg.DBString)
 	// Закрываем БД-соединение
 	defer dbRepository.Close()
@@ -29,7 +29,7 @@ func Run() error {
 		Cfg: cfg,
 		Rep: repo,
 		DB:  dbRepository,
-		URL: url_local,
+		URL: urlLocal,
 	}
 
 	r := chi.NewRouter()
