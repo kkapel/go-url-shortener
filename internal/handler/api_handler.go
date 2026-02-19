@@ -136,6 +136,7 @@ func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 
 		if err := h.DB.CheckConnect(); err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		res.WriteHeader(http.StatusOK)
 

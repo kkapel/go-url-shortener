@@ -18,8 +18,7 @@ func InitDB(dbConnect string) *DB {
 	}
 	db, err := sql.Open("pgx", dbConnect)
 	if err != nil {
-		// убрать панику
-		panic(err)
+		return nil
 	}
 
 	return &DB{

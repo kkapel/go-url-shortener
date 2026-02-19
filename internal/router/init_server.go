@@ -26,6 +26,7 @@ func Run() error {
 		return err
 	}
 	defer loger.Log.Sync()
+	loger.Log.Info("Init server start")
 
 	h := &handler.Handler{
 		Cfg: cfg,
