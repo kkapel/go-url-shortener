@@ -125,6 +125,11 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
+
+	if h.DB == nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	switch req.Method {
 	case http.MethodGet:
 

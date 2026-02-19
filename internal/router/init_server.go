@@ -18,7 +18,9 @@ func Run() error {
 	urlLocal := repository.NewURLRepository()
 	dbRepository := repository.InitDB(cfg.DBString)
 	// Закрываем БД-соединение
-	defer dbRepository.Close()
+	if dbRepository != nil {
+		defer dbRepository.Close()
+	}
 
 	if err := loger.Initialize("INFO"); err != nil {
 		return err
