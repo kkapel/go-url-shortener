@@ -77,7 +77,7 @@ func CreateConfig() *Config {
 	case *flagDB != "":
 		resultDBString = *flagDB
 	default:
-		resultDBString = "localhost"
+		resultDBString = ""
 	}
 
 	log.Printf("%s", "Переменная varFileStorePath в функции CreateConfig: "+varFileStorePath)
