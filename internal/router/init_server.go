@@ -13,6 +13,9 @@ import (
 )
 
 func Run() error {
+	if err := loger.Initialize("INFO"); err != nil {
+		return err
+	}
 	loger.Log.Info("Init server start")
 	cfg := config.CreateConfig()
 	repo := repository.CreateRepository()
@@ -23,9 +26,6 @@ func Run() error {
 		defer dbRepository.Close()
 	}
 
-	if err := loger.Initialize("INFO"); err != nil {
-		return err
-	}
 	defer loger.Log.Sync()
 	loger.Log.Info("Init server running")
 
