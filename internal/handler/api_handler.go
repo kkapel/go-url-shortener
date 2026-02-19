@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
@@ -31,6 +32,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		// Читаем тело запроса
+		fmt.Println("Метод ApiPagePost")
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			http.Error(res, "Cannot read request body", http.StatusBadRequest)

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"go-url-shortener/internal/repository"
 	"net/http"
 	"sync"
@@ -8,6 +9,7 @@ import (
 
 func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, databaseDsn string,
 	db *repository.DB, req *http.Request, localURL *repository.URL) (string, error) {
+	fmt.Println("Метод GetURL")
 	var URL string
 	var err error
 	var fileStorage []repository.URLFileStorage
