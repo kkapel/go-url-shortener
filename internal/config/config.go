@@ -57,7 +57,7 @@ func CreateConfig() *Config {
 	} else if *flagGetURLHost != "" {
 		resultGetURLHost = *flagGetURLHost
 	} else {
-		resultGetURLHost = "http://localhost:8080"
+		resultGetURLHost = ""
 	}
 
 	if varFileStorePath != "" {
