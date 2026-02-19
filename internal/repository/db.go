@@ -12,18 +12,42 @@ type DB struct {
 	db *sql.DB
 }
 
-func InitDB(dbConnect string) *DB {
+func InitDB(dbConnect string) (*DB, error) {
 	if dbConnect == "" {
-		return nil
+		return nil, nil
 	}
 	db, err := sql.Open("pgx", dbConnect)
 	if err != nil {
-		return nil
+		return nil, err
+	}
+
+	database := &DB{db: db}
+
+	if err := database.CheckConnect(); err != nil {
+		return nil, err
+	}
+
+	query :=
+		`create table short_url
+		(
+		id serial primary key,
+		short_link VARCHAR(100) UNIQUE,
+		long_link VARCHAR(500) UNIQUE
+		);
+
+		comment on column short_url.id is 'ID записи';
+		comment on column short_url.short_link is 'Короткий URL';
+		comment on column short_url.long_link is 'Длинный URL';`
+
+	_, err = db.Exec(query)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &DB{
 		db: db,
-	}
+	}, nil
 }
 
 func (db *DB) CheckConnect() error {
@@ -49,10 +73,10 @@ func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string)
 	switch URLType {
 	case "short":
 		// Получаем LongURL
-		sqlStr = "select long_link from short_url where short_link = ?"
+		sqlStr = "select long_link from short_url where short_link = $1"
 	case "long":
 		// Получаем short_url
-		sqlStr = "select short_link from short_url where long_link = ?"
+		sqlStr = "select short_link from short_url where long_link = $1"
 	}
 
 	var urlDB sql.NullString
@@ -77,9 +101,9 @@ func (db *DB) InsertIntoDB(ctx context.Context, inputURL string, URLType string)
 	var sqlStr string
 	switch URLType {
 	case "short":
-		sqlStr = "insert into short_url (short_link) values (?)"
+		sqlStr = "insert into short_url (short_link) values ($1)"
 	case "long":
-		sqlStr = "insert into short_url (long_link) values (?)"
+		sqlStr = "insert into short_url (long_link) values ($1)"
 	}
 
 	_, err := db.db.ExecContext(ctx, sqlStr, inputURL)
