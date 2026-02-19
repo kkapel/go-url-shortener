@@ -42,6 +42,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		res.Header().Set("content-type", "text/plain")
