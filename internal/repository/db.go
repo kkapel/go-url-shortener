@@ -28,7 +28,7 @@ func InitDB(dbConnect string) (*DB, error) {
 	}
 
 	query :=
-		`create table short_url
+		`create table IF NOT EXISTS short_url
 		(
 		id serial primary key,
 		short_link VARCHAR(100) UNIQUE,
@@ -45,9 +45,7 @@ func InitDB(dbConnect string) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{
-		db: db,
-	}, nil
+	return database, nil
 }
 
 func (db *DB) CheckConnect() error {
