@@ -13,6 +13,9 @@ type DB struct {
 }
 
 func InitDB(dbConnect string) *DB {
+	if dbConnect == "" {
+		return nil
+	}
 	db, err := sql.Open("pgx", dbConnect)
 	if err != nil {
 		// убрать панику
