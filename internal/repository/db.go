@@ -42,28 +42,28 @@ func (db *DB) Close() error {
 
 // Функция получения URL из Базы Данных
 // При значении NULL возвращается пустая строка
-func (db *DB) GetUrlFromDB(ctx context.Context, inputURL string, URLType string) (string, error) {
-	var sql_str string
+func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string) (string, error) {
+	var sqlStr string
 	switch URLType {
 	case "short":
 		// Получаем LongURL
-		sql_str = "select long_link from short_url where short_link = ?"
+		sqlStr = "select long_link from short_url where short_link = ?"
 	case "long":
 		// Получаем short_url
-		sql_str = "select short_link from short_url where long_link = ?"
+		sqlStr = "select short_link from short_url where long_link = ?"
 	}
 
-	var url_db sql.NullString
-	row := db.db.QueryRowContext(ctx, sql_str, inputURL)
+	var urlDB sql.NullString
+	row := db.db.QueryRowContext(ctx, sqlStr, inputURL)
 
-	err := row.Scan(&url_db)
+	err := row.Scan(&urlDB)
 
 	if err != nil {
 		return "", err
 	}
 
-	if url_db.Valid {
-		return url_db.String, nil
+	if urlDB.Valid {
+		return urlDB.String, nil
 	}
 
 	return "", nil
@@ -72,15 +72,15 @@ func (db *DB) GetUrlFromDB(ctx context.Context, inputURL string, URLType string)
 
 // Функция записи ссылок в БД
 func (db *DB) InsertIntoDB(ctx context.Context, inputURL string, URLType string) error {
-	var sql_str string
+	var sqlStr string
 	switch URLType {
 	case "short":
-		sql_str = "insert into short_url (short_link) values (?)"
+		sqlStr = "insert into short_url (short_link) values (?)"
 	case "long":
-		sql_str = "insert into short_url (long_link) values (?)"
+		sqlStr = "insert into short_url (long_link) values (?)"
 	}
 
-	_, err := db.db.ExecContext(ctx, sql_str, inputURL)
+	_, err := db.db.ExecContext(ctx, sqlStr, inputURL)
 
 	if err != nil {
 		return err
