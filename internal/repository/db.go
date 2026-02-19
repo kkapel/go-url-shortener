@@ -83,6 +83,9 @@ func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string)
 	err := row.Scan(&urlDB)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
 		return "", err
 	}
 
