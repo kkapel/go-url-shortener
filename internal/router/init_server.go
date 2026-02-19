@@ -13,6 +13,7 @@ import (
 )
 
 func Run() error {
+	loger.Log.Info("Init server start")
 	cfg := config.CreateConfig()
 	repo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
@@ -26,7 +27,7 @@ func Run() error {
 		return err
 	}
 	defer loger.Log.Sync()
-	loger.Log.Info("Init server start")
+	loger.Log.Info("Init server running")
 
 	h := &handler.Handler{
 		Cfg: cfg,
