@@ -99,8 +99,7 @@ func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string)
 
 // Функция записи ссылок в БД
 func (db *DB) InsertIntoDB(ctx context.Context, shortURL string, longURL string) error {
-	var sqlStr string
-	sqlStr = "insert into short_url (short_link, long_link) values ($1, $2)"
+	sqlStr := "insert into short_url (short_link, long_link) values ($1, $2)"
 
 	_, err := db.db.ExecContext(ctx, sqlStr, shortURL, longURL)
 
