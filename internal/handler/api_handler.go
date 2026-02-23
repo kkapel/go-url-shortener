@@ -186,7 +186,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 
 		//Получаем короткий URL
 		//Проходим по циклу оригинальных(длинных) URL
-		for i, _ := range batchJSON {
+		for i := range batchJSON {
 			shortURL, err := service.GetURL(batchJSON[i].OriginalURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
 
 			if err != nil {
