@@ -201,7 +201,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 
 			newBatchJSONResponse := BatchJSONResponse{
 				CorrelationID: batchJSON[i].CorrelationID,
-				ShortURL:      shortURL,
+				ShortURL:      h.Cfg.GetURLHost + "/" + shortURL,
 			}
 
 			BatchJSONResponseVar = append(BatchJSONResponseVar, newBatchJSONResponse)
