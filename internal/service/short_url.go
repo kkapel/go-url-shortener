@@ -19,7 +19,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	// В противном случае храним значения локально
 
 	if db != nil && databaseDsn != "" {
-		URL, err = db.GetURLFromDB(req.Context(), inputURL, URLType)
+		URL, err = db.GetURLFromDB(req.Context(), inputURL, URLType, req.Method)
 	} else if filePath != "" {
 		URL, fileStorage, err = repository.GetURLFromFile(inputURL, filePath, URLType, mu)
 	} else {
@@ -31,6 +31,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	}
 
 	if err != nil {
+
 		return "", err
 	}
 

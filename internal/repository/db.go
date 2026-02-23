@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"net/http"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -10,6 +12,26 @@ import (
 
 type DB struct {
 	db *sql.DB
+}
+
+type UniqueViolationError struct {
+	LongURL string
+	Err     error
+}
+
+func (e *UniqueViolationError) Error() string {
+	return fmt.Sprintf("url %s already exists, original error: %v", e.LongURL, e.Err)
+}
+
+func (e *UniqueViolationError) Unwrap() error {
+	return e.Err
+}
+
+func NewUniqueViolationError(longURL string, err error) error {
+	return &UniqueViolationError{
+		LongURL: longURL,
+		Err:     err,
+	}
 }
 
 func InitDB(dbConnect string) (*DB, error) {
@@ -66,7 +88,8 @@ func (db *DB) Close() error {
 
 // Функция получения URL из Базы Данных
 // При значении NULL возвращается пустая строка
-func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string) (string, error) {
+// Для Post-запросов при нахождении короткой ссылки возвращаем http status 409 Conflict
+func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMethod string) (string, error) {
 	var sqlStr string
 	switch URLType {
 	case "long":
@@ -81,6 +104,14 @@ func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string)
 	row := db.db.QueryRowContext(ctx, sqlStr, inputURL)
 
 	err := row.Scan(&urlDB)
+
+	// Проверка кейса http status 409 Conflict
+	// При попытке пользователя сократить уже имеющийся в базе URL через хендлеры POST / и POST /api/shorten сервис должен вернуть HTTP-статус 409 Conflict,
+	// а в теле ответа — уже имеющийся сокращённый URL в правильном для хендлера формате.
+
+	if httpMethod == http.MethodPost && err != sql.ErrNoRows && URLType == "short" {
+		return "", NewUniqueViolationError(urlDB.String, fmt.Errorf("UniqueViolationError"))
+	}
 
 	if err != nil {
 		if err == sql.ErrNoRows {

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/loger"
@@ -53,6 +54,12 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
 
 		if err != nil {
+			var uniqueViolationError *repository.UniqueViolationError
+
+			if errors.As(err, &uniqueViolationError) {
+				res.WriteHeader(http.StatusConflict)
+				res.Write([]byte(h.Cfg.GetURLHost + "/" + uniqueViolationError.LongURL))
+			}
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
