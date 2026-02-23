@@ -59,6 +59,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 			if errors.As(err, &uniqueViolationError) {
 				res.WriteHeader(http.StatusConflict)
 				res.Write([]byte(h.Cfg.GetURLHost + "/" + uniqueViolationError.LongURL))
+				return
 			}
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -124,6 +125,13 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
 
 		if err != nil {
+			var uniqueViolationError *repository.UniqueViolationError
+
+			if errors.As(err, &uniqueViolationError) {
+				res.WriteHeader(http.StatusConflict)
+				res.Write([]byte(h.Cfg.GetURLHost + "/" + uniqueViolationError.LongURL))
+				return
+			}
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
