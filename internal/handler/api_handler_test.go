@@ -241,6 +241,7 @@ func TestAPIPagePostBatch(t *testing.T) {
 			h.APIPagePostBatch(postRecorder, requestPost)
 
 			result := postRecorder.Result()
+			defer result.Body.Close()
 
 			assert.Equal(t, test.wantpost.code, result.StatusCode)
 			assert.Equal(t, test.wantpost.contentType, result.Header.Get("Content-Type"))
