@@ -182,3 +182,69 @@ func TestAPIHandlerJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIPagePostBatch(t *testing.T) {
+	type want struct {
+		code        int
+		contentType string
+	}
+	tests := []struct {
+		name       string
+		wantpost   want
+		wantget    want
+		request    string
+		body       string
+		url        URL
+		bodyResult string
+	}{
+		{
+			name: "positive test",
+			wantpost: want{
+				code:        201,
+				contentType: "application/json",
+			},
+			wantget: want{
+				code:        307,
+				contentType: "text/plain",
+			},
+			request:    "http://localhost:8080",
+			body:       `[{"correlation_id":"corel_aaaa","original_url":"https://practicum.yandex/"},{"correlation_id":"corel_bbbb","original_url":"https://google.com"}]`,
+			bodyResult: "https://practicum.yandex/",
+		},
+	}
+
+	// Создаем конфиг
+	testCfg := &config.Config{
+		Host:            "localhost:8080",
+		GetURLHost:      "http://localhost:8080",
+		FileStoragePath: filepath.Join(".", "storage.txt"),
+		DBString:        "postgres://postgres:admin@localhost:5432/postgres?sslmode=disable",
+	}
+
+	db, err := repository.InitDB(testCfg.DBString)
+	require.NoError(t, err)
+
+	err = loger.Initialize("INFO")
+	require.NoError(t, err)
+	defer loger.Log.Sync()
+
+	h := &Handler{
+		Cfg: testCfg,
+		Rep: repository.CreateRepository(),
+		DB:  db,
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			requestPost := httptest.NewRequest(http.MethodPost, test.request, strings.NewReader(test.body))
+			postRecorder := httptest.NewRecorder()
+			h.APIPagePostBatch(postRecorder, requestPost)
+
+			result := postRecorder.Result()
+
+			assert.Equal(t, test.wantpost.code, result.StatusCode)
+			assert.Equal(t, test.wantpost.contentType, result.Header.Get("Content-Type"))
+		})
+	}
+
+}

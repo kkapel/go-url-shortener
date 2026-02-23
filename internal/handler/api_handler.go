@@ -194,6 +194,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 			shortURL, err := service.GetURL(batchJSON[i].OriginalURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
 
 			if err != nil {
+				loger.Log.Error("Ошибка в методе GetURL", zap.String("error", err.Error()))
 				http.Error(res, err.Error(), http.StatusInternalServerError)
 				return
 			}

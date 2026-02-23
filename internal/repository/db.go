@@ -69,10 +69,10 @@ func (db *DB) Close() error {
 func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string) (string, error) {
 	var sqlStr string
 	switch URLType {
-	case "short":
+	case "long":
 		// Получаем LongURL
 		sqlStr = "select long_link from short_url where short_link = $1"
-	case "long":
+	case "short":
 		// Получаем short_url
 		sqlStr = "select short_link from short_url where long_link = $1"
 	}
