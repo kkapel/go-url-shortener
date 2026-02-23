@@ -28,6 +28,16 @@ type ResultJSON struct {
 	Result string `json:"result"`
 }
 
+type BatchJSON struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+
+type BatchJSONResponse struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
+
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
@@ -146,6 +156,68 @@ func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 		errorResponse(res)
 	}
 
+}
+
+func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
+	loger.Log.Info("APIPagePostBatch starts")
+	if h.DB == nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	switch req.Method {
+	case http.MethodPost:
+		// Читаем тело запроса (JSON-массив)
+		var batchJSON []BatchJSON
+		var BatchJSONResponseVar []BatchJSONResponse
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			http.Error(res, "Cannot read request body", http.StatusBadRequest)
+			return
+		}
+		defer req.Body.Close()
+
+		if err := json.Unmarshal(body, &batchJSON); err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		loger.Log.Info("APIPagePostBatch", zap.Any("Request Body", batchJSON))
+
+		//Получаем короткий URL
+		//Проходим по циклу оригинальных(длинных) URL
+		for i, _ := range batchJSON {
+			shortURL, err := service.GetURL(batchJSON[i].OriginalURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			newBatchJSONResponse := BatchJSONResponse{
+				CorrelationID: batchJSON[i].CorrelationID,
+				ShortURL:      shortURL,
+			}
+
+			BatchJSONResponseVar = append(BatchJSONResponseVar, newBatchJSONResponse)
+		}
+
+		// Формируем ответ
+		resp, err := json.Marshal(BatchJSONResponseVar)
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		res.Header().Set("content-type", "application/json")
+		res.WriteHeader(http.StatusCreated)
+		loger.Log.Info("APIPagePostBatch", zap.String("result", string(resp)))
+		res.Write(resp)
+
+	default:
+		errorResponse(res)
+	}
 }
 
 func errorResponse(res http.ResponseWriter) {

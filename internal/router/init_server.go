@@ -57,6 +57,7 @@ func Run() error {
 	r.Use(encoding.RequestEncoding)
 	r.Post("/", h.APIPagePost)
 	r.Post("/api/shorten", h.APIPagePostJSON)
+	r.Post("/api/shorten/batch", h.APIPagePostBatch)
 	r.Get("/{id}", h.APIPageGet)
 	r.Get("/ping", h.APIGetPing)
 
