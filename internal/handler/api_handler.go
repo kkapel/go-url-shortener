@@ -124,19 +124,15 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
 
-		if err != nil {
-			var uniqueViolationError *repository.UniqueViolationError
+		var uniqueViolationError *repository.UniqueViolationError
 
-			if errors.As(err, &uniqueViolationError) {
-				res.WriteHeader(http.StatusConflict)
-				res.Write([]byte(h.Cfg.GetURLHost + "/" + uniqueViolationError.LongURL))
-				return
-			}
+		if err != nil && !errors.As(err, &uniqueViolationError) {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		//Фомрмируем ответ
+		// в т.ч. для UniqueViolationError
 		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
 		loger.Log.Info("APIPagePostJSON", zap.String("short_url", shortURL))
 		resp, err := json.Marshal(resultJSON)
@@ -147,7 +143,12 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		}
 
 		res.Header().Set("content-type", "application/json")
-		res.WriteHeader(http.StatusCreated)
+		if uniqueViolationError != nil {
+			//UniqueViolationError
+			res.WriteHeader(http.StatusConflict)
+		} else {
+			res.WriteHeader(http.StatusCreated)
+		}
 		loger.Log.Info("APIPagePostJSON", zap.String("result", string(resp)))
 		res.Write(resp)
 
