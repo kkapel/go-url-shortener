@@ -70,6 +70,8 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 
+		loger.Log.Info("APIPageGet", zap.Any("Request Body", req.Body))
+
 		shortURL := req.PathValue("id")
 		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
 
@@ -104,6 +106,8 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		defer req.Body.Close()
+
+		loger.Log.Info("APIPagePostJSON", zap.Any("Request Body", body))
 
 		if err := json.Unmarshal(body, &url); err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
