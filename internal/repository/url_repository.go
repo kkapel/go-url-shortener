@@ -11,19 +11,8 @@ import (
 	"go.uber.org/zap"
 )
 
-type URL struct {
-	//[longURL]shortURL
-	data map[string]string
-}
-
 type Repsitory struct {
 	Mu sync.Mutex
-}
-
-func NewURLRepository() *URL {
-	return &URL{
-		data: make(map[string]string),
-	}
 }
 
 type URLFileStorage struct {
@@ -31,58 +20,6 @@ type URLFileStorage struct {
 	ShortURL string `json:"short_url"`
 	LongURL  string `json:"long_url"`
 }
-
-/*
-
-// Получаем короткую URL
-// Если не находим значение в мапе, то генерируем
-func (u *URL) GetShortURL(longURL string) string {
-	var shortURL string
-	val, ok := u.data[longURL]
-
-	// Значения нет, нужно создать новое
-	if !ok {
-		// Генерируем значение из 7 символов
-		shortURL = service.GenerateRandomString(7)
-		// Сохраняем в мапе
-		u.data[longURL] = shortURL
-
-	} else {
-		shortURL = val
-	}
-
-	return shortURL
-}
-
-func (u *URL) GetLongURL(shortURL string) string {
-	var longURL string
-
-	for key, value := range u.data {
-		if value == shortURL {
-			longURL = key
-			break // Выходим, как только нашли первое совпадение
-		}
-	}
-
-	return longURL
-
-}
-
-*/
-
-// Получаем короткую URL
-// Если не находим значение в файле, то генерируем
-
-/*
-		Данные хранятся в файле в формате JSON
-		Пример файла:
-		[
-	  		{"uuid":"1","short_url":"4rSPg8ap","original_url":"http://yandex.ru"},
-	  		{"uuid":"2","short_url":"edVPg3ks","original_url":"http://ya.ru"},
-	  		{"uuid":"3","short_url":"dG56Hqxm","original_url":"http://practicum.yandex.ru"},
-	  ...
-		]
-*/
 
 func CreateRepository() *Repsitory {
 	return &Repsitory{
