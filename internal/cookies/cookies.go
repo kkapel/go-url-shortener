@@ -7,12 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-const SECRET_KEY = "testKey1" // убрать в бд
-const TOKEN_EXP = time.Hour * 3
+const SecretKey = "testKey1" // убрать в бд
+const TokenExp = time.Hour * 3
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserId int
+	UserID int
 }
 
 func RequestCookies(h http.Handler) http.Handler {
@@ -36,12 +36,12 @@ func generateCookie() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
-		UserId: 1,
+		UserID: 1,
 	})
 
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
 		return "", err
 	}

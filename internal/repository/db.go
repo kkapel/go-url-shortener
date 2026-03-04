@@ -15,7 +15,7 @@ type DB struct {
 	db *sql.DB
 }
 
-var database_instance *DB
+var databaseInstance *DB
 
 type UniqueViolationError struct {
 	LongURL string
@@ -71,7 +71,7 @@ func InitDB(dbConnect string) error {
 		return err
 	}
 
-	database_instance = database
+	databaseInstance = database
 
 	return nil
 }
@@ -80,7 +80,7 @@ func CheckConnect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	if err := database_instance.db.PingContext(ctx); err != nil {
+	if err := databaseInstance.db.PingContext(ctx); err != nil {
 		return err
 	}
 
@@ -88,7 +88,7 @@ func CheckConnect() error {
 }
 
 func Close() error {
-	database_instance.db.Close()
+	databaseInstance.db.Close()
 	return nil
 }
 
@@ -107,7 +107,7 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 	}
 
 	var urlDB sql.NullString
-	row := database_instance.db.QueryRowContext(ctx, sqlStr, inputURL)
+	row := databaseInstance.db.QueryRowContext(ctx, sqlStr, inputURL)
 
 	err := row.Scan(&urlDB)
 
@@ -138,7 +138,7 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 func InsertIntoDB(ctx context.Context, shortURL string, longURL string) error {
 	sqlStr := "insert into short_url (short_link, long_link) values ($1, $2)"
 
-	_, err := database_instance.db.ExecContext(ctx, sqlStr, shortURL, longURL)
+	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, shortURL, longURL)
 
 	if err != nil {
 		return err
