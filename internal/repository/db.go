@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -39,7 +38,7 @@ func NewUniqueViolationError(longURL string, err error) error {
 
 func InitDB(dbConnect string) error {
 	if dbConnect == "" {
-		return errors.New("database connection string is empty")
+		return nil
 	}
 	db, err := sql.Open("pgx", dbConnect)
 	if err != nil {
