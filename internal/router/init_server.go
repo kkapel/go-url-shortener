@@ -23,15 +23,13 @@ func Run() error {
 	cfg := config.CreateConfig()
 	repo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	dbRepository, err := repository.InitDB(cfg.DBString)
+	err := repository.InitDB(cfg.DBString)
 
 	if err != nil {
 		return err
 	}
 	// Закрываем БД-соединение
-	if dbRepository != nil {
-		defer dbRepository.Close()
-	}
+	defer repository.Close()
 
 	loger.Log.Info("Init server running")
 	fmt.Println("Init server running")
@@ -39,7 +37,6 @@ func Run() error {
 	h := &handler.Handler{
 		Cfg: cfg,
 		Rep: repo,
-		DB:  dbRepository,
 		URL: urlLocal,
 	}
 

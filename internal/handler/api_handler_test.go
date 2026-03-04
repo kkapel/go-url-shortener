@@ -221,7 +221,7 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 		DBString:        "postgres://postgres:admin@localhost:5432/postgres?sslmode=disable",
 	}
 
-	db, err := repository.InitDB(testCfg.DBString)
+	err := repository.InitDB(testCfg.DBString)
 	require.NoError(t, err)
 
 	err = loger.Initialize("INFO")
@@ -231,7 +231,6 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 	h := &Handler{
 		Cfg: testCfg,
 		Rep: repository.CreateRepository(),
-		DB:  db,
 	}
 
 	for _, test := range tests {

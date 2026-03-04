@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,6 +14,8 @@ import (
 type DB struct {
 	db *sql.DB
 }
+
+var database_instance *DB
 
 type UniqueViolationError struct {
 	LongURL string
@@ -34,19 +37,20 @@ func NewUniqueViolationError(longURL string, err error) error {
 	}
 }
 
-func InitDB(dbConnect string) (*DB, error) {
+func InitDB(dbConnect string) error {
 	if dbConnect == "" {
-		return nil, nil
+		return errors.New("database connection string is empty")
 	}
 	db, err := sql.Open("pgx", dbConnect)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	database := &DB{db: db}
 
-	if err := database.CheckConnect(); err != nil {
-		return nil, err
+	if err := CheckConnect(); err != nil {
+		Close()
+		return err
 	}
 
 	query :=
@@ -64,32 +68,34 @@ func InitDB(dbConnect string) (*DB, error) {
 	_, err = db.Exec(query)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return database, nil
+	database_instance = database
+
+	return nil
 }
 
-func (db *DB) CheckConnect() error {
+func CheckConnect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	if err := db.db.PingContext(ctx); err != nil {
+	if err := database_instance.db.PingContext(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (db *DB) Close() error {
-	db.db.Close()
+func Close() error {
+	database_instance.db.Close()
 	return nil
 }
 
 // Функция получения URL из Базы Данных
 // При значении NULL возвращается пустая строка
 // Для Post-запросов при нахождении короткой ссылки возвращаем http status 409 Conflict
-func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMethod string) (string, error) {
+func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMethod string) (string, error) {
 	var sqlStr string
 	switch URLType {
 	case "long":
@@ -101,7 +107,7 @@ func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string,
 	}
 
 	var urlDB sql.NullString
-	row := db.db.QueryRowContext(ctx, sqlStr, inputURL)
+	row := database_instance.db.QueryRowContext(ctx, sqlStr, inputURL)
 
 	err := row.Scan(&urlDB)
 
@@ -129,14 +135,21 @@ func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string,
 }
 
 // Функция записи ссылок в БД
-func (db *DB) InsertIntoDB(ctx context.Context, shortURL string, longURL string) error {
+func InsertIntoDB(ctx context.Context, shortURL string, longURL string) error {
 	sqlStr := "insert into short_url (short_link, long_link) values ($1, $2)"
 
-	_, err := db.db.ExecContext(ctx, sqlStr, shortURL, longURL)
+	_, err := database_instance.db.ExecContext(ctx, sqlStr, shortURL, longURL)
 
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func GetLastUserID() error {
+	//sqlStr := "select max(user_id) from users"
+
+	//_, err :=
 	return nil
 }

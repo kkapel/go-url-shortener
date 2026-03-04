@@ -7,7 +7,7 @@ import (
 )
 
 func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, databaseDsn string,
-	db *repository.DB, req *http.Request, localURL *repository.URL) (string, error) {
+	req *http.Request, localURL *repository.URL) (string, error) {
 	var URL string
 	var err error
 	var fileStorage []repository.URLFileStorage
@@ -18,8 +18,8 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	// В противном случае храним записи в файле
 	// В противном случае храним значения локально
 
-	if db != nil && databaseDsn != "" {
-		URL, err = db.GetURLFromDB(req.Context(), inputURL, URLType, req.Method)
+	if databaseDsn != "" {
+		URL, err = repository.GetURLFromDB(req.Context(), inputURL, URLType, req.Method)
 	} else if filePath != "" {
 		URL, fileStorage, err = repository.GetURLFromFile(inputURL, filePath, URLType, mu)
 	} else {
@@ -39,7 +39,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	if URLType == "short" && URL == "" {
 		URL = GenerateRandomString(7)
 		if databaseDsn != "" {
-			err = db.InsertIntoDB(req.Context(), URL, inputURL)
+			err = repository.InsertIntoDB(req.Context(), URL, inputURL)
 		} else if filePath != "" {
 			repository.WriteToFile(fileStorage, URL, inputURL, filePath, mu)
 		} else {

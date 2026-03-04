@@ -17,7 +17,6 @@ import (
 type Handler struct {
 	Cfg *config.Config
 	Rep *repository.Repsitory
-	DB  *repository.DB
 	URL *repository.URL
 }
 
@@ -51,7 +50,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		}
 
 		longURL := string(body)
-		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
 
 		if err != nil {
 			var uniqueViolationError *repository.UniqueViolationError
@@ -81,7 +80,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 		loger.Log.Info("APIPageGet", zap.Any("Request Body", req.Body))
 
 		shortURL := req.PathValue("id")
-		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
 
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
@@ -122,7 +121,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
 
 		var uniqueViolationError *repository.UniqueViolationError
 
@@ -159,14 +158,10 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 
-	if h.DB == nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	switch req.Method {
 	case http.MethodGet:
 
-		if err := h.DB.CheckConnect(); err != nil {
+		if err := repository.CheckConnect(); err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -180,10 +175,6 @@ func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 	loger.Log.Info("APIPagePostBatch starts")
-	if h.DB == nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 
 	switch req.Method {
 	case http.MethodPost:
@@ -207,7 +198,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		//Получаем короткий URL
 		//Проходим по циклу оригинальных(длинных) URL
 		for i := range batchJSON {
-			shortURL, err := service.GetURL(batchJSON[i].OriginalURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+			shortURL, err := service.GetURL(batchJSON[i].OriginalURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
 
 			if err != nil {
 				loger.Log.Error("Ошибка в методе GetURL", zap.String("error", err.Error()))
