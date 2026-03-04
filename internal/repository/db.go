@@ -45,7 +45,7 @@ func InitDB(dbConnect string) error {
 		return err
 	}
 
-	database := &DB{db: db}
+	databaseInstance = &DB{db: db}
 
 	if err := CheckConnect(); err != nil {
 		Close()
@@ -69,8 +69,6 @@ func InitDB(dbConnect string) error {
 	if err != nil {
 		return err
 	}
-
-	databaseInstance = database
 
 	return nil
 }
