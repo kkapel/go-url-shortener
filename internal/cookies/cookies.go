@@ -38,8 +38,9 @@ func RequestCookies(h http.Handler) http.Handler {
 				return
 			}
 			// другая ошибка
+			// тоже выдаем куку
 		} else if err != http.ErrNoCookie {
-			http.Error(w, "Ошибка при обработки куки", http.StatusBadRequest)
+			newToken, userID, err = generateToken(r.Context())
 			return
 		} else {
 
