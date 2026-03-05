@@ -3,7 +3,6 @@ package router
 import (
 	"fmt"
 	"go-url-shortener/internal/config"
-	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/encoding"
 	"go-url-shortener/internal/handler"
 	"go-url-shortener/internal/loger"
@@ -53,7 +52,7 @@ func Run() error {
 
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
-	r.Use(cookies.RequestCookies)
+	//r.Use(cookies.RequestCookies)
 	r.Post("/", h.APIPagePost)
 	r.Post("/api/shorten", h.APIPagePostJSON)
 	r.Post("/api/shorten/batch", h.APIPagePostBatch)
