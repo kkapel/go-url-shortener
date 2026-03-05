@@ -66,11 +66,14 @@ func RequestCookies(h http.Handler) http.Handler {
 			cookie := &http.Cookie{
 				Name:  "access_token",
 				Value: newToken,
+				Path:  "/",
 			}
 			http.SetCookie(w, cookie)
 
 			repository.InsertUserId(r.Context(), userID, newToken)
 		}
+
+		h.ServeHTTP(w, r)
 
 	})
 }
