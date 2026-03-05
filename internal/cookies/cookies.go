@@ -68,7 +68,6 @@ func RequestCookies(h http.Handler) http.Handler {
 				Value: newToken,
 			}
 			http.SetCookie(w, cookie)
-			w.WriteHeader(http.StatusOK)
 
 			repository.InsertUserId(r.Context(), userID, newToken)
 		}
