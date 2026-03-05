@@ -46,12 +46,14 @@ func RequestCookies(h http.Handler) http.Handler {
 			requestUserID, err := GetUserID(cookie.Value)
 
 			if err != nil {
-				http.Error(w, "Ошибка при парсинге куки", http.StatusBadRequest)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 
 			// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
 			if requestUserID == userIDNotFound {
-				http.Error(w, "ID пользователя не найден в куке", http.StatusUnauthorized)
+				w.WriteHeader(http.StatusUnauthorized)
+				return
 			}
 
 			// Если не проходит проверку подлинности, выдаем новую куку
