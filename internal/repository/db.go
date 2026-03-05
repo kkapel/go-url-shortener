@@ -62,7 +62,16 @@ func InitDB(dbConnect string) error {
 
 		comment on column short_url.id is 'ID записи';
 		comment on column short_url.short_link is 'Короткий URL';
-		comment on column short_url.long_link is 'Длинный URL';`
+		comment on column short_url.long_link is 'Длинный URL';
+		-- Создание таблицы users_token
+		create table if not exists users_token
+		(
+			id serial primary key,
+			accessToken VARCHAR(100) UNIQUE
+		);
+
+		comment on column users_token.id is 'ID пользователя';
+		comment on column users_token.accessToken is 'Токен пользователя';`
 
 	_, err = db.Exec(query)
 
@@ -149,7 +158,7 @@ func GetLastUserID(ctx context.Context) (int, error) {
 	if databaseInstance == nil {
 		return 0, nil
 	}
-	sqlStr := "select coalesce(max(user_id), 0) from users"
+	sqlStr := "select coalesce(max(user_id), 0) from users_token"
 
 	row := databaseInstance.db.QueryRowContext(ctx, sqlStr)
 
