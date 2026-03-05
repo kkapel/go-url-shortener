@@ -41,7 +41,6 @@ func RequestCookies(h http.Handler) http.Handler {
 			// тоже выдаем куку
 		} else if err != http.ErrNoCookie {
 			newToken, userID, err = generateToken(r.Context())
-			return
 		} else {
 
 			// Проверяем подлинность куки
