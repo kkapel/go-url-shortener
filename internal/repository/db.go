@@ -158,12 +158,12 @@ func GetLastUserID(ctx context.Context) (int, error) {
 	if databaseInstance == nil {
 		return 0, nil
 	}
-	sqlStr := "select coalesce(max(user_id), 0) from users_token"
+	sqlStr := "select coalesce(max(id), 0) from users_token"
 
 	row := databaseInstance.db.QueryRowContext(ctx, sqlStr)
 
 	var urlDB sql.NullInt32
-	err := row.Scan(urlDB)
+	err := row.Scan(&urlDB)
 
 	if err != nil {
 		return 0, err
