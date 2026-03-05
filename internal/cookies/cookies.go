@@ -60,6 +60,11 @@ func RequestCookies(h http.Handler) http.Handler {
 			// Если не проходит проверку подлинности, выдаем новую куку
 			if requestUserID == tokenIsNotValid {
 				newToken, userID, err = generateToken(r.Context())
+
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 
 		}
