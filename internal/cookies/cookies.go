@@ -40,23 +40,25 @@ func RequestCookies(h http.Handler) http.Handler {
 			// другая ошибка
 		} else if err != http.ErrNoCookie {
 			http.Error(w, "Ошибка при обработки куки", http.StatusBadRequest)
-		}
+		} else {
 
-		// Проверяем подлинность куки
-		requestUserID, err := GetUserID(cookie.Value)
+			// Проверяем подлинность куки
+			requestUserID, err := GetUserID(cookie.Value)
 
-		if err != nil {
-			http.Error(w, "Ошибка при парсинге куки", http.StatusBadRequest)
-		}
+			if err != nil {
+				http.Error(w, "Ошибка при парсинге куки", http.StatusBadRequest)
+			}
 
-		// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
-		if requestUserID == userIDNotFound {
-			http.Error(w, "ID пользователя не найден в куке", http.StatusUnauthorized)
-		}
+			// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
+			if requestUserID == userIDNotFound {
+				http.Error(w, "ID пользователя не найден в куке", http.StatusUnauthorized)
+			}
 
-		// Если не проходит проверку подлинности, выдаем новую куку
-		if requestUserID == tokenIsNotValid {
-			newToken, userID, err = generateToken(r.Context())
+			// Если не проходит проверку подлинности, выдаем новую куку
+			if requestUserID == tokenIsNotValid {
+				newToken, userID, err = generateToken(r.Context())
+			}
+
 		}
 
 		// если заполнен newToken, то выдаем его пользователю в ответе
