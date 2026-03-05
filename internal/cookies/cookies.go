@@ -27,11 +27,12 @@ type Claims struct {
 func RequestCookies(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var newToken string
+		var userID int
 		cookie, err := r.Cookie("access_token")
 
 		if err == http.ErrNoCookie {
 			//Если куки нет, выдаем новую куку
-			newToken, err = generateToken(r.Context())
+			newToken, userID, err = generateToken(r.Context())
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -55,7 +56,7 @@ func RequestCookies(h http.Handler) http.Handler {
 
 		// Если не проходит проверку подлинности, выдаем новую куку
 		if requestUserID == tokenIsNotValid {
-			newToken, err = generateToken(r.Context())
+			newToken, userID, err = generateToken(r.Context())
 		}
 
 		// если заполнен newToken, то выдаем его пользователю в ответе
@@ -66,18 +67,20 @@ func RequestCookies(h http.Handler) http.Handler {
 			}
 			http.SetCookie(w, cookie)
 			w.WriteHeader(http.StatusOK)
+
+			repository.InsertUserId(r.Context(), userID, newToken)
 		}
 
 	})
 }
 
-func generateToken(ctx context.Context) (string, error) {
+func generateToken(ctx context.Context) (string, int, error) {
 	// Создаем jwt-строку
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
 	userID, err := repository.GetLastUserID(ctx)
 
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
@@ -90,10 +93,10 @@ func generateToken(ctx context.Context) (string, error) {
 
 	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
-	return tokenString, nil
+	return tokenString, userID + 1, nil
 
 }
 

@@ -162,3 +162,16 @@ func GetLastUserID(ctx context.Context) (int, error) {
 
 	return 0, nil
 }
+
+// Функция записи токена в БД
+func InsertUserId(ctx context.Context, id int, accessToken string) error {
+	sqlStr := "insert into users_token (id, accessToken) values ($1, $2)"
+	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, id, accessToken)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
