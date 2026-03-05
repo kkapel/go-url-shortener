@@ -40,6 +40,7 @@ func RequestCookies(h http.Handler) http.Handler {
 			// другая ошибка
 		} else if err != http.ErrNoCookie {
 			http.Error(w, "Ошибка при обработки куки", http.StatusBadRequest)
+			return
 		} else {
 
 			// Проверяем подлинность куки
