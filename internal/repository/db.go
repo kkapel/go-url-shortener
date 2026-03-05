@@ -83,7 +83,7 @@ func InitDB(dbConnect string) error {
 }
 
 func CheckConnect() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := databaseInstance.db.PingContext(ctx); err != nil {
