@@ -1,5 +1,5 @@
 -- Создание таблицы short_url
-create table short_url
+create table if not exists short_url
 (
 id serial primary key,
 short_link VARCHAR(100) UNIQUE,

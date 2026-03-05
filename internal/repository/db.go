@@ -144,9 +144,21 @@ func InsertIntoDB(ctx context.Context, shortURL string, longURL string) error {
 	return nil
 }
 
-func GetLastUserID() error {
-	//sqlStr := "select max(user_id) from users"
+func GetLastUserID(ctx context.Context) (int, error) {
+	sqlStr := "select coalesce(max(user_id), 0) from users"
 
-	//_, err :=
-	return nil
+	row := databaseInstance.db.QueryRowContext(ctx, sqlStr)
+
+	var urlDB sql.NullInt32
+	err := row.Scan(urlDB)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if urlDB.Valid {
+		return int(urlDB.Int32), nil
+	}
+
+	return 0, nil
 }
