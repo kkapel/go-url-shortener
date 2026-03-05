@@ -177,7 +177,7 @@ func GetLastUserID(ctx context.Context) (int, error) {
 }
 
 // Функция записи токена в БД
-func InsertUserId(ctx context.Context, id int, accessToken string) error {
+func InsertUserID(ctx context.Context, id int, accessToken string) error {
 
 	if databaseInstance == nil {
 		return nil

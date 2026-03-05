@@ -41,6 +41,10 @@ func RequestCookies(h http.Handler) http.Handler {
 			// тоже выдаем куку
 		} else if err != http.ErrNoCookie {
 			newToken, userID, err = generateToken(r.Context())
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		} else {
 
 			// Проверяем подлинность куки
@@ -78,7 +82,7 @@ func RequestCookies(h http.Handler) http.Handler {
 			}
 			http.SetCookie(w, cookie)
 
-			repository.InsertUserId(r.Context(), userID, newToken)
+			repository.InsertUserID(r.Context(), userID, newToken)
 		}
 
 		h.ServeHTTP(w, r)
