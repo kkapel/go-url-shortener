@@ -145,6 +145,10 @@ func InsertIntoDB(ctx context.Context, shortURL string, longURL string) error {
 }
 
 func GetLastUserID(ctx context.Context) (int, error) {
+
+	if databaseInstance == nil {
+		return 0, nil
+	}
 	sqlStr := "select coalesce(max(user_id), 0) from users"
 
 	row := databaseInstance.db.QueryRowContext(ctx, sqlStr)
@@ -165,6 +169,11 @@ func GetLastUserID(ctx context.Context) (int, error) {
 
 // Функция записи токена в БД
 func InsertUserId(ctx context.Context, id int, accessToken string) error {
+
+	if databaseInstance == nil {
+		return nil
+	}
+
 	sqlStr := "insert into users_token (id, accessToken) values ($1, $2)"
 	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, id, accessToken)
 
