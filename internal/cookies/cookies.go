@@ -19,6 +19,8 @@ const (
 const SecretKey = "testKey1" // убрать в бд
 const TokenExp = time.Hour * 3
 
+const UserIDKey string = "userID"
+
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID int
@@ -85,7 +87,7 @@ func RequestCookies(h http.Handler) http.Handler {
 			repository.InsertUserID(r.Context(), userID, newToken)
 		}
 
-		ctx := context.WithValue(r.Context(), "userID", userID)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		h.ServeHTTP(w, r.WithContext(ctx))
 
 	})
