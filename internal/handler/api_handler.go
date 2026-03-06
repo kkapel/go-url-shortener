@@ -268,10 +268,10 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 
 		// Заполняем ответ
 		var urlsResponse []ShortURLByUserResponse
-		for short_url, long_url := range urls {
+		for shortURL, longURL := range urls {
 			shortURLByUserResponseVar := &ShortURLByUserResponse{
-				ShortURL:    short_url,
-				OriginalURL: long_url,
+				ShortURL:    shortURL,
+				OriginalURL: longURL,
 			}
 
 			urlsResponse = append(urlsResponse, *shortURLByUserResponseVar)
