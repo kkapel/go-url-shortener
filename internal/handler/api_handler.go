@@ -261,6 +261,11 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		// Получаем список url-ов из БД
 		urls, err := repository.GetURLsByUserID(req.Context(), id)
 
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		// Заполняем ответ
 		var urlsResponse []ShortURLByUserResponse
 		for short_url, long_url := range urls {
@@ -273,6 +278,11 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		}
 
 		resp, err := json.Marshal(urlsResponse)
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		res.Header().Set("content-type", "application/json")
 		res.WriteHeader(http.StatusCreated)
