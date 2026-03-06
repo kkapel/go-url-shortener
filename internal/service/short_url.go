@@ -53,7 +53,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 
 			loger.Log.Info("Cookie value",
 				zap.String("access-token", cookie.Value),
-				zap.Int("userID", userID)
+				zap.Int("userID", userID),
 			)
 			if err != nil || userID == cookies.UserIDNotFound {
 				userID = 0
