@@ -2,9 +2,12 @@ package service
 
 import (
 	"go-url-shortener/internal/cookies"
+	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
 	"net/http"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, databaseDsn string,
@@ -47,6 +50,11 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 		if сErr == nil {
 			//получаем userID
 			userID, err = cookies.GetUserID(cookie.Value)
+
+			loger.Log.Info("Cookie value",
+				zap.String("access-token", cookie.Value),
+				zap.Int("userID", userID)
+			)
 			if err != nil || userID == cookies.UserIDNotFound {
 				userID = 0
 			}
