@@ -210,14 +210,18 @@ func GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error)
 		return nil, err
 	}
 
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
 	result := make(map[string]string)
 
 	for rows.Next() {
-		var shortUrl, longUrl string
-		if err := rows.Scan(&shortUrl, &longUrl); err != nil {
+		var shortURL, longURL string
+		if err := rows.Scan(&shortURL, &longURL); err != nil {
 			return nil, err
 		}
-		result[shortUrl] = longUrl
+		result[shortURL] = longURL
 	}
 
 	return result, nil
