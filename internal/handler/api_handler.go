@@ -266,11 +266,15 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 			return
 		}
 
+		if len(urls) == 0 {
+			res.WriteHeader(http.StatusNoContent)
+		}
+
 		// Заполняем ответ
 		var urlsResponse []ShortURLByUserResponse
 		for shortURL, longURL := range urls {
 			shortURLByUserResponseVar := &ShortURLByUserResponse{
-				ShortURL:    shortURL,
+				ShortURL:    h.Cfg.GetURLHost + "/" + shortURL,
 				OriginalURL: longURL,
 			}
 
