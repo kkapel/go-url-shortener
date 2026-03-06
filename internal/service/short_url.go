@@ -47,7 +47,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 		var userID int
 
 		//получаем userID
-		userID, ok := req.Context().Value("userID").(int)
+		userID, ok := req.Context().Value(cookies.UserIDKey).(int)
 
 		if !ok {
 			userID = 0
