@@ -59,9 +59,6 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 		if userID == cookies.UserIDNotFound {
 			userID = 0
 		}
-		if сErr != nil {
-			return "", err
-		}
 
 		if databaseDsn != "" {
 			err = repository.InsertIntoDB(req.Context(), URL, inputURL, userID)
