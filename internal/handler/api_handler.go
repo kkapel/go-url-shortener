@@ -285,7 +285,7 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		}
 
 		res.Header().Set("content-type", "application/json")
-		res.WriteHeader(http.StatusCreated)
+		res.WriteHeader(http.StatusOK)
 		loger.Log.Info("APIPageGetUserURLs", zap.String("result", string(resp)))
 		res.Write(resp)
 
