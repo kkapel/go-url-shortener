@@ -44,13 +44,16 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 		var userID int
 		cookie, err := req.Cookie("access_token")
 
-		if err != http.ErrNoCookie {
-			return "", nil
+		if err == nil {
+			//получаем userID
+			userID, err = cookies.GetUserID(cookie.Value)
+			if err != nil || userID == cookies.UserIDNotFound {
+				userID = 0
+			}
 		} else if err == http.ErrNoCookie {
 			userID = 0
 		} else {
-			//получаем userID
-			userID, err = cookies.GetUserID(cookie.Value)
+			return "", err
 		}
 
 		if userID == cookies.UserIDNotFound {
