@@ -43,26 +43,19 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	if URLType == "short" && URL == "" {
 		URL = GenerateRandomString(7)
 
-		// Также смотрим, есть ли userID в куке access-token
+		// Также смотрим, есть ли userID в контексте
 		var userID int
-		cookie, сErr := req.Cookie("access_token")
 
-		if сErr == nil {
-			//получаем userID
-			userID, err = cookies.GetUserID(cookie.Value)
+		//получаем userID
+		userID, ok := req.Context().Value("userID").(int)
 
-			loger.Log.Info("Cookie value",
-				zap.String("access-token", cookie.Value),
-				zap.Int("userID", userID),
-			)
-			if err != nil || userID == cookies.UserIDNotFound {
-				userID = 0
-			}
-		} else if сErr == http.ErrNoCookie {
+		if !ok {
 			userID = 0
-		} else {
-			return "", err
 		}
+
+		loger.Log.Info("Cookie value",
+			zap.Int("userID", userID),
+		)
 
 		if userID == cookies.UserIDNotFound {
 			userID = 0

@@ -85,7 +85,8 @@ func RequestCookies(h http.Handler) http.Handler {
 			repository.InsertUserID(r.Context(), userID, newToken)
 		}
 
-		h.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), "userID", userID)
+		h.ServeHTTP(w, r.WithContext(ctx))
 
 	})
 }
