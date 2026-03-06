@@ -59,6 +59,7 @@ func Run() error {
 	r.Post("/api/shorten/batch", h.APIPagePostBatch)
 	r.Get("/{id}", h.APIPageGet)
 	r.Get("/ping", h.APIGetPing)
+	r.Get("/GET /api/user/urls", h.APIPageGetUserURLs)
 
 	return srv.ListenAndServe()
 }

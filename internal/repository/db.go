@@ -193,3 +193,33 @@ func InsertUserID(ctx context.Context, id int, accessToken string) error {
 	return nil
 
 }
+
+func GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error) {
+
+	if databaseInstance == nil {
+		return nil, nil
+	}
+
+	sqlStr := "select short_link, long_link from short_url where user_id = $1"
+	rows, err := databaseInstance.db.QueryContext(ctx, sqlStr, userID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Строка не найдена
+		}
+		return nil, err
+	}
+
+	result := make(map[string]string)
+
+	for rows.Next() {
+		var shortUrl, longUrl string
+		if err := rows.Scan(&shortUrl, &longUrl); err != nil {
+			return nil, err
+		}
+		result[shortUrl] = longUrl
+	}
+
+	return result, nil
+
+}

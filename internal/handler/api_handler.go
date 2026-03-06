@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go-url-shortener/internal/config"
+	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
@@ -36,6 +37,11 @@ type BatchJSON struct {
 type BatchJSONResponse struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
+}
+
+type ShortURLByUserResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
@@ -230,6 +236,53 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 	default:
 		errorResponse(res)
 	}
+}
+
+// Хэндлер получения ссылок юзера
+func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		// Получаем из куки UserID
+		cookie, err := req.Cookie("access_token")
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		id, err := cookies.GetUserID(cookie.Value)
+
+		loger.Log.Info("APIPageGetUserURLs", zap.Int("input id", id))
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Получаем список url-ов из БД
+		urls, err := repository.GetURLsByUserID(req.Context(), id)
+
+		// Заполняем ответ
+		var urlsResponse []ShortURLByUserResponse
+		for short_url, long_url := range urls {
+			shortURLByUserResponseVar := &ShortURLByUserResponse{
+				ShortURL:    short_url,
+				OriginalURL: long_url,
+			}
+
+			urlsResponse = append(urlsResponse, *shortURLByUserResponseVar)
+		}
+
+		resp, err := json.Marshal(urlsResponse)
+
+		res.Header().Set("content-type", "application/json")
+		res.WriteHeader(http.StatusCreated)
+		loger.Log.Info("APIPageGetUserURLs", zap.String("result", string(resp)))
+		res.Write(resp)
+
+	default:
+		errorResponse(res)
+	}
+
 }
 
 func errorResponse(res http.ResponseWriter) {
