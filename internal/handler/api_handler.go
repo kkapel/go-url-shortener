@@ -245,8 +245,13 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		// Получаем из куки UserID
 		cookie, err := req.Cookie("access_token")
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
+			if err == http.ErrNoCookie {
+				res.WriteHeader(http.StatusNoContent)
+				return
+			} else {
+				http.Error(res, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 
 		id, err := cookies.GetUserID(cookie.Value)
