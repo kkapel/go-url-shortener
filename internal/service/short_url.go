@@ -42,15 +42,15 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 
 		// Также смотрим, есть ли userID в куке access-token
 		var userID int
-		cookie, err := req.Cookie("access_token")
+		cookie, сErr := req.Cookie("access_token")
 
-		if err == nil {
+		if сErr == nil {
 			//получаем userID
 			userID, err = cookies.GetUserID(cookie.Value)
 			if err != nil || userID == cookies.UserIDNotFound {
 				userID = 0
 			}
-		} else if err == http.ErrNoCookie {
+		} else if сErr == http.ErrNoCookie {
 			userID = 0
 		} else {
 			return "", err
@@ -59,7 +59,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 		if userID == cookies.UserIDNotFound {
 			userID = 0
 		}
-		if err != nil {
+		if сErr != nil {
 			return "", err
 		}
 
