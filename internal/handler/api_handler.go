@@ -268,6 +268,7 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 
 		if len(urls) == 0 {
 			res.WriteHeader(http.StatusNoContent)
+			return
 		}
 
 		// Заполняем ответ

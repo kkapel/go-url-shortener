@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"go-url-shortener/internal/loger"
 	"net/http"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
 )
 
 type DB struct {
@@ -144,6 +146,13 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 // Функция записи ссылок в БД
 func InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID int) error {
 	sqlStr := "insert into short_url (short_link, long_link, user_id) values ($1, $2, $3)"
+
+	loger.Log.Info("DB Exec",
+		zap.String("query", sqlStr),
+		zap.String("short", shortURL),
+		zap.String("long", longURL),
+		zap.Int("user_id", userID),
+	)
 
 	var userIDInsert sql.NullInt32
 	if userID != 0 {
