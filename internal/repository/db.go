@@ -217,10 +217,7 @@ func GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error)
 		}
 		return nil, err
 	}
-
-	if rows.Err() != nil {
-		return nil, rows.Err()
-	}
+	defer rows.Close()
 
 	result := make(map[string]string)
 
@@ -230,6 +227,10 @@ func GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error)
 			return nil, err
 		}
 		result[shortURL] = longURL
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return result, nil
