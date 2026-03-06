@@ -57,7 +57,8 @@ func InitDB(dbConnect string) error {
 		(
 		id serial primary key,
 		short_link VARCHAR(100) UNIQUE,
-		long_link VARCHAR(500) UNIQUE
+		long_link VARCHAR(500) UNIQUE,
+		user_id int
 		);
 
 		comment on column short_url.id is 'ID записи';
@@ -141,10 +142,17 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 }
 
 // Функция записи ссылок в БД
-func InsertIntoDB(ctx context.Context, shortURL string, longURL string) error {
-	sqlStr := "insert into short_url (short_link, long_link) values ($1, $2)"
+func InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID int) error {
+	sqlStr := "insert into short_url (short_link, long_link, user_id) values ($1, $2, $3)"
 
-	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, shortURL, longURL)
+	var userIDInsert sql.NullInt32
+	if userID != 0 {
+		userIDInsert = sql.NullInt32{Int32: int32(userID), Valid: true}
+	} else {
+		userIDInsert = sql.NullInt32{Valid: false} //null value
+	}
+
+	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, shortURL, longURL, userIDInsert)
 
 	if err != nil {
 		return err

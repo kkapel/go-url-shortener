@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	userIDNotFound    = -2
+	UserIDNotFound    = -2
 	tokenIsNotValid   = -1
 	tokerParsingError = -100
 )
@@ -56,7 +56,7 @@ func RequestCookies(h http.Handler) http.Handler {
 			}
 
 			// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
-			if requestUserID == userIDNotFound {
+			if requestUserID == UserIDNotFound {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
@@ -133,7 +133,7 @@ func GetUserID(tokenString string) (int, error) {
 
 	//Если userID не заполнен, будет по умолчанию значение 0
 	if claims.UserID < 1 {
-		return userIDNotFound, nil
+		return UserIDNotFound, nil
 	}
 
 	fmt.Println("Token is valid")

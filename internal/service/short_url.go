@@ -1,6 +1,7 @@
 package service
 
 import (
+	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/repository"
 	"net/http"
 	"sync"
@@ -38,8 +39,28 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	// В случае отсутствия генерируем новый URL
 	if URLType == "short" && URL == "" {
 		URL = GenerateRandomString(7)
+
+		// Также смотрим, есть ли userID в куке access-token
+		var userID int
+		cookie, err := req.Cookie("access_token")
+
+		if err != http.ErrNoCookie {
+			return "", err
+		} else if err == http.ErrNoCookie {
+			userID = 0
+		}
+
+		//получаем userID
+		userID, err = cookies.GetUserID(cookie.Value)
+		if userID == cookies.UserIDNotFound {
+			userID = 0
+		}
+		if err != nil {
+			return "", err
+		}
+
 		if databaseDsn != "" {
-			err = repository.InsertIntoDB(req.Context(), URL, inputURL)
+			err = repository.InsertIntoDB(req.Context(), URL, inputURL, userID)
 		} else if filePath != "" {
 			repository.WriteToFile(fileStorage, URL, inputURL, filePath, mu)
 		} else {
