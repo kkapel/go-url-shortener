@@ -19,7 +19,9 @@ const (
 const SecretKey = "testKey1" // убрать в бд
 const TokenExp = time.Hour * 3
 
-const UserIDKey string = "userID"
+type userIDType string
+
+const UserIDKey userIDType = "userID"
 
 type Claims struct {
 	jwt.RegisteredClaims
