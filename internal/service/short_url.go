@@ -45,7 +45,7 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 		cookie, err := req.Cookie("access_token")
 
 		if err != http.ErrNoCookie {
-			return "", err
+			return "", nil
 		} else if err == http.ErrNoCookie {
 			userID = 0
 		} else {
