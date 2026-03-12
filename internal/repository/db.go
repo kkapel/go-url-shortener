@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -248,4 +249,42 @@ func GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error)
 
 	return result, nil
 
+}
+
+func SetDeletedFlag(ctx context.Context, ids []string) error {
+	if databaseInstance == nil {
+		return nil
+	}
+
+	sqlStr := "update short_url set deleted_flag = true where user_id = ANY($1)"
+
+	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, pq.Array(ids))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
+
+	if databaseInstance == nil {
+		return false, nil
+	}
+
+	sqlStr := "select short_link from short_url where user_id = $1 and short_link = $2"
+
+	rows, err := databaseInstance.db.QueryContext(ctx, sqlStr, userID, shortLink)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil // Строка не найдена
+		}
+		return false, err
+	}
+	defer rows.Close()
+
+	return true, nil
 }

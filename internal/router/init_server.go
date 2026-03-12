@@ -60,6 +60,7 @@ func Run() error {
 	r.Get("/{id}", h.APIPageGet)
 	r.Get("/ping", h.APIGetPing)
 	r.Get("/api/user/urls", h.APIPageGetUserURLs)
+	r.Delete("/api/user/urls", h.APIDeleteURLs)
 
 	return srv.ListenAndServe()
 }
