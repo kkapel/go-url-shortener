@@ -288,3 +288,24 @@ func CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bo
 
 	return true, nil
 }
+
+func CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool, error) {
+	if databaseInstance == nil {
+		return false, nil
+	}
+
+	sqlStr := "select short_link from short_url where short_link = $1 and deleted_flag = true"
+
+	rows, err := databaseInstance.db.QueryContext(ctx, sqlStr, shortLink)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil // Строка не найдена
+		}
+		return false, err
+	}
+	defer rows.Close()
+
+	return true, nil
+
+}

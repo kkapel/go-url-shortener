@@ -89,6 +89,19 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 		loger.Log.Info("APIPageGet", zap.Any("Request Body", req.Body))
 
 		shortURL := req.PathValue("id")
+
+		shortURLExists, err := repository.CheckFlagDeleteExists(req.Context(), shortURL)
+
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if shortURLExists == false {
+			res.WriteHeader(http.StatusGone)
+			return
+		}
+
 		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
 
 		if err != nil {
