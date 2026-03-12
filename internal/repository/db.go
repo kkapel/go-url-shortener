@@ -286,6 +286,10 @@ func CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bo
 	}
 	defer rows.Close()
 
+	if err = rows.Err(); err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
@@ -305,6 +309,10 @@ func CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool, error) 
 		return false, err
 	}
 	defer rows.Close()
+
+	if err = rows.Err(); err != nil {
+		return false, err
+	}
 
 	return true, nil
 
