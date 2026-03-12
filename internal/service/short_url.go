@@ -1,17 +1,34 @@
 package service
 
 import (
+	"context"
+	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
-	"net/http"
-	"sync"
 
 	"go.uber.org/zap"
 )
 
-func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, databaseDsn string,
-	req *http.Request, localURL *repository.URL) (string, error) {
+type ShortenerService struct {
+	dbRepo    *repository.DB
+	fileRepo  *repository.Repsitory
+	localRepo *repository.URL
+	cfg       *config.Config
+}
+
+func NewShortenerService(db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config) *ShortenerService {
+	s := &ShortenerService{
+		dbRepo:    db,
+		fileRepo:  file,
+		localRepo: localRepo,
+		cfg:       cfg,
+	}
+
+	return s
+}
+
+func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType string, action string) (string, error) {
 	var URL string
 	var err error
 	var fileStorage []repository.URLFileStorage
@@ -22,10 +39,10 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 	// В противном случае храним записи в файле
 	// В противном случае храним значения локально
 
-	if databaseDsn != "" {
-		URL, err = repository.GetURLFromDB(req.Context(), inputURL, URLType, req.Method)
-	} else if filePath != "" {
-		URL, fileStorage, err = repository.GetURLFromFile(inputURL, filePath, URLType, mu)
+	if s.dbRepo != nil {
+		URL, err = s.dbRepo.GetURLFromDB(ctx, inputURL, URLType, action)
+	} else if s.fileRepo != nil {
+		URL, fileStorage, err = s.fileRepo.GetURLFromFile(inputURL, filePath, URLType, mu)
 	} else {
 		if URLType == "short" {
 			URL = localURL.GetShortURL(inputURL)
@@ -77,4 +94,24 @@ func GetURL(inputURL string, filePath string, URLType string, mu *sync.Mutex, da
 
 	return URL, nil
 
+}
+
+func (s *ShortenerService) CheckFlagDeleteExists(ctx context.Context, shortURL string) (bool, error) {
+	return s.dbRepo.CheckFlagDeleteExists(ctx, shortURL)
+}
+
+func (s *ShortenerService) CheckConnect(context.Context) error {
+	return s.dbRepo.CheckConnect()
+}
+
+func (s *ShortenerService) GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error) {
+	return s.dbRepo.GetURLsByUserID(ctx, userID)
+}
+
+func (s *ShortenerService) SetDeletedFlag(ctx context.Context, ids []string) error {
+	return s.dbRepo.SetDeletedFlag(ctx, ids)
+}
+
+func (s *ShortenerService) CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
+	return s.dbRepo.CheckDeleteAvailable(ctx, userID, shortLink)
 }

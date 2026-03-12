@@ -19,9 +19,8 @@ import (
 )
 
 type Handler struct {
-	Cfg *config.Config
-	Rep *repository.Repsitory
-	URL *repository.URL
+	Cfg     *config.Config
+	Service *service.ShortenerService
 }
 
 type URL struct {
@@ -59,7 +58,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		}
 
 		longURL := string(body)
-		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
+		shortURL, err := h.Service.GetURL(req.Context(), longURL, "short", "Post")
 
 		if err != nil {
 			var uniqueViolationError *repository.UniqueViolationError
@@ -90,7 +89,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 		shortURL := req.PathValue("id")
 
-		shortURLExists, err := repository.CheckFlagDeleteExists(req.Context(), shortURL)
+		shortURLExists, err := h.Service.CheckFlagDeleteExists(req.Context(), shortURL)
 
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
@@ -102,7 +101,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
+		longURL, err := h.Service.GetURL(req.Context(), shortURL, "long", "Get")
 
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
@@ -143,7 +142,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
+		shortURL, err := h.Service.GetURL(req.Context(), url.URL, "short", "Post")
 
 		var uniqueViolationError *repository.UniqueViolationError
 
@@ -183,7 +182,7 @@ func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 
-		if err := repository.CheckConnect(); err != nil {
+		if err := h.Service.CheckConnect(req.Context()); err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -220,7 +219,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		//Получаем короткий URL
 		//Проходим по циклу оригинальных(длинных) URL
 		for i := range batchJSON {
-			shortURL, err := service.GetURL(batchJSON[i].OriginalURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, req, h.URL)
+			shortURL, err := h.Service.GetURL(req.Context(), batchJSON[i].OriginalURL, "short", "Post")
 
 			if err != nil {
 				loger.Log.Error("Ошибка в методе GetURL", zap.String("error", err.Error()))
@@ -280,7 +279,7 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		}
 
 		// Получаем список url-ов из БД
-		urls, err := repository.GetURLsByUserID(req.Context(), id)
+		urls, err := h.Service.GetURLsByUserID(req.Context(), id)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -369,8 +368,8 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 
 			inputCh := generatorString(arrayURLs)
 			fanoutCh := fanOut(inputCh)
-			finalCh := fanIn(ctx, id, fanoutCh...)
-			batchWorkerDelete(ctx, finalCh)
+			finalCh := fanIn(ctx, id, h, fanoutCh...)
+			batchWorkerDelete(ctx, finalCh, h)
 
 		}(arrayURLs)
 
@@ -400,14 +399,14 @@ func generatorString(input []string) chan string {
 	return inputCh
 }
 
-func batchWorkerDelete(ctx context.Context, inputCh <-chan string) {
+func batchWorkerDelete(ctx context.Context, inputCh <-chan string, h *Handler) {
 	var ids []string
 
 	for id := range inputCh {
 		ids = append(ids, id)
 
 		if len(ids) >= 100 { //Устанавливаем лимит для батча - 100
-			err := repository.SetDeletedFlag(ctx, ids)
+			err := h.Service.SetDeletedFlag(ctx, ids)
 			if err != nil {
 				log.Printf("ошибка батч-удаления: %v", err)
 			}
@@ -415,7 +414,7 @@ func batchWorkerDelete(ctx context.Context, inputCh <-chan string) {
 		}
 
 		if len(ids) > 0 {
-			err := repository.SetDeletedFlag(ctx, ids)
+			err := h.Service.SetDeletedFlag(ctx, ids)
 			if err != nil {
 				log.Printf("ошибка батч-удаления: %v", err)
 			}
@@ -441,7 +440,7 @@ func fanOut(inputCh chan string) []chan string {
 }
 
 // fanIn объединяет несколько каналов resultChs в один.
-func fanIn(ctx context.Context, userID int, resultChs ...chan string) chan string {
+func fanIn(ctx context.Context, userID int, h *Handler, resultChs ...chan string) chan string {
 	// конечный выходной канал в который отправляем данные из всех каналов из слайса, назовём его результирующим
 	finalCh := make(chan string)
 
@@ -462,7 +461,7 @@ func fanIn(ctx context.Context, userID int, resultChs ...chan string) chan strin
 
 			// получаем данные из канала
 			for data := range chClosure {
-				available, err := repository.CheckDeleteAvailable(ctx, userID, data)
+				available, err := h.Service.CheckDeleteAvailable(ctx, userID, data)
 				if err != nil {
 					// Логируем ошибку, но не роняем весь конвейер
 					log.Printf("ошибка проверки ссылки %s: %v", data, err)

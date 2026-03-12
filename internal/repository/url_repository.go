@@ -31,7 +31,7 @@ func CreateRepository() *Repsitory {
 // Если shortURL не найден, возвращается пустая строка
 // Если LongURL не найден, возращается ошибка
 // Возможные значения URLType: long, short
-func GetURLFromFile(inputURL string, filePath string, URLType string, mu *sync.Mutex) (string, []URLFileStorage, error) {
+func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType string, mu *sync.Mutex) (string, []URLFileStorage, error) {
 	var resultURL string
 	var URLFileStorages []URLFileStorage
 	loger.Log.Info("GetURLFromFile", zap.String("filePath", filePath))

@@ -8,6 +8,7 @@ import (
 	"go-url-shortener/internal/handler"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
+	"go-url-shortener/internal/service"
 	"net/http"
 	"time"
 
@@ -22,23 +23,26 @@ func Run() error {
 	loger.Log.Info("Init server start")
 	fmt.Println("Init server start")
 	cfg := config.CreateConfig()
-	repo := repository.CreateRepository()
+	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	err := repository.InitDB(cfg.DBString)
-
+	databaseInstance, err := repository.InitDB(cfg.DBString)
 	if err != nil {
 		return err
 	}
+
+	service := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg)
+
 	// Закрываем БД-соединение
-	defer repository.Close()
+	if databaseInstance != nil {
+		defer databaseInstance.Close()
+	}
 
 	loger.Log.Info("Init server running")
 	fmt.Println("Init server running")
 
 	h := &handler.Handler{
-		Cfg: cfg,
-		Rep: repo,
-		URL: urlLocal,
+		Cfg:     cfg,
+		Service: service,
 	}
 
 	r := chi.NewRouter()

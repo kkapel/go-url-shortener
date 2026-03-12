@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"go-url-shortener/internal/loger"
-	"net/http"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -16,8 +15,6 @@ import (
 type DB struct {
 	db *sql.DB
 }
-
-var databaseInstance *DB
 
 type UniqueViolationError struct {
 	LongURL string
@@ -39,20 +36,19 @@ func NewUniqueViolationError(longURL string, err error) error {
 	}
 }
 
-func InitDB(dbConnect string) error {
+func InitDB(dbConnect string) (*DB, error) {
 	if dbConnect == "" {
-		return nil
+		return nil, nil
 	}
 	db, err := sql.Open("pgx", dbConnect)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	databaseInstance = &DB{db: db}
+	databaseInstance := &DB{db: db}
 
-	if err := CheckConnect(); err != nil {
-		Close()
-		return err
+	if err := databaseInstance.CheckConnect(); err != nil {
+		return nil, err
 	}
 
 	query :=
@@ -84,32 +80,32 @@ func InitDB(dbConnect string) error {
 	_, err = db.Exec(query)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return databaseInstance, nil
 }
 
-func CheckConnect() error {
+func (db *DB) CheckConnect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := databaseInstance.db.PingContext(ctx); err != nil {
+	if err := db.db.PingContext(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func Close() error {
-	databaseInstance.db.Close()
+func (db *DB) Close() error {
+	db.db.Close()
 	return nil
 }
 
 // Функция получения URL из Базы Данных
 // При значении NULL возвращается пустая строка
 // Для Post-запросов при нахождении короткой ссылки возвращаем http status 409 Conflict
-func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMethod string) (string, error) {
+func (db *DB) GetURLFromDB(ctx context.Context, inputURL string, URLType string, action string) (string, error) {
 	var sqlStr string
 	switch URLType {
 	case "long":
@@ -121,7 +117,7 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 	}
 
 	var urlDB sql.NullString
-	row := databaseInstance.db.QueryRowContext(ctx, sqlStr, inputURL)
+	row := db.db.QueryRowContext(ctx, sqlStr, inputURL)
 
 	err := row.Scan(&urlDB)
 
@@ -129,7 +125,7 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 	// При попытке пользователя сократить уже имеющийся в базе URL через хендлеры POST / и POST /api/shorten сервис должен вернуть HTTP-статус 409 Conflict,
 	// а в теле ответа — уже имеющийся сокращённый URL в правильном для хендлера формате.
 
-	if httpMethod == http.MethodPost && err != sql.ErrNoRows && URLType == "short" {
+	if action == "Post" && err != sql.ErrNoRows && URLType == "short" {
 		return "", NewUniqueViolationError(urlDB.String, fmt.Errorf("UniqueViolationError"))
 	}
 
@@ -149,7 +145,7 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 }
 
 // Функция записи ссылок в БД
-func InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID int) error {
+func (db *DB) InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID int) error {
 	sqlStr := "insert into short_url (short_link, long_link, user_id, change_time) values ($1, $2, $3, $4)"
 
 	loger.Log.Info("DB Exec",
@@ -166,7 +162,7 @@ func InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID i
 		userIDInsert = sql.NullInt32{Valid: false} //null value
 	}
 
-	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, shortURL, longURL, userIDInsert, time.Now())
+	_, err := db.db.ExecContext(ctx, sqlStr, shortURL, longURL, userIDInsert, time.Now())
 
 	if err != nil {
 		return err
@@ -175,14 +171,14 @@ func InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID i
 	return nil
 }
 
-func GetLastUserID(ctx context.Context) (int, error) {
+func (db *DB) GetLastUserID(ctx context.Context) (int, error) {
 
-	if databaseInstance == nil {
+	if db == nil {
 		return 0, nil
 	}
 	sqlStr := "select coalesce(max(id), 0) from users_token"
 
-	row := databaseInstance.db.QueryRowContext(ctx, sqlStr)
+	row := db.db.QueryRowContext(ctx, sqlStr)
 
 	var urlDB sql.NullInt32
 	err := row.Scan(&urlDB)
@@ -199,14 +195,14 @@ func GetLastUserID(ctx context.Context) (int, error) {
 }
 
 // Функция записи токена в БД
-func InsertUserID(ctx context.Context, id int, accessToken string) error {
+func (db *DB) InsertUserID(ctx context.Context, id int, accessToken string) error {
 
-	if databaseInstance == nil {
+	if db == nil {
 		return nil
 	}
 
 	sqlStr := "insert into users_token (id, accessToken) values ($1, $2)"
-	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, id, accessToken)
+	_, err := db.db.ExecContext(ctx, sqlStr, id, accessToken)
 
 	if err != nil {
 		return err
@@ -216,14 +212,14 @@ func InsertUserID(ctx context.Context, id int, accessToken string) error {
 
 }
 
-func GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error) {
+func (db *DB) GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error) {
 
-	if databaseInstance == nil {
+	if db == nil {
 		return nil, nil
 	}
 
 	sqlStr := "select short_link, long_link from short_url where user_id = $1"
-	rows, err := databaseInstance.db.QueryContext(ctx, sqlStr, userID)
+	rows, err := db.db.QueryContext(ctx, sqlStr, userID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -251,14 +247,14 @@ func GetURLsByUserID(ctx context.Context, userID int) (map[string]string, error)
 
 }
 
-func SetDeletedFlag(ctx context.Context, ids []string) error {
-	if databaseInstance == nil {
+func (db *DB) SetDeletedFlag(ctx context.Context, ids []string) error {
+	if db == nil {
 		return nil
 	}
 
 	sqlStr := "update short_url set deleted_flag = true where user_id = ANY($1)"
 
-	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, pq.Array(ids))
+	_, err := db.db.ExecContext(ctx, sqlStr, pq.Array(ids))
 
 	if err != nil {
 		return err
@@ -268,15 +264,15 @@ func SetDeletedFlag(ctx context.Context, ids []string) error {
 
 }
 
-func CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
+func (db *DB) CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
 
-	if databaseInstance == nil {
+	if db == nil {
 		return false, nil
 	}
 
 	sqlStr := "select short_link from short_url where user_id = $1 and short_link = $2"
 
-	rows, err := databaseInstance.db.QueryContext(ctx, sqlStr, userID, shortLink)
+	rows, err := db.db.QueryContext(ctx, sqlStr, userID, shortLink)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -293,14 +289,14 @@ func CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bo
 	return true, nil
 }
 
-func CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool, error) {
-	if databaseInstance == nil {
+func (db *DB) CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool, error) {
+	if db == nil {
 		return false, nil
 	}
 
 	sqlStr := "select short_link from short_url where short_link = $1 and deleted_flag = true"
 
-	rows, err := databaseInstance.db.QueryContext(ctx, sqlStr, shortLink)
+	rows, err := db.db.QueryContext(ctx, sqlStr, shortLink)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
