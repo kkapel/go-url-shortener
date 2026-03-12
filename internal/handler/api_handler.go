@@ -97,7 +97,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		if shortURLExists == false {
+		if !shortURLExists {
 			res.WriteHeader(http.StatusGone)
 			return
 		}
