@@ -150,7 +150,7 @@ func GetURLFromDB(ctx context.Context, inputURL string, URLType string, httpMeth
 
 // Функция записи ссылок в БД
 func InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID int) error {
-	sqlStr := "insert into short_url (short_link, long_link, user_id) values ($1, $2, $3)"
+	sqlStr := "insert into short_url (short_link, long_link, user_id, change_time) values ($1, $2, $3, $4)"
 
 	loger.Log.Info("DB Exec",
 		zap.String("query", sqlStr),
@@ -166,7 +166,7 @@ func InsertIntoDB(ctx context.Context, shortURL string, longURL string, userID i
 		userIDInsert = sql.NullInt32{Valid: false} //null value
 	}
 
-	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, shortURL, longURL, userIDInsert)
+	_, err := databaseInstance.db.ExecContext(ctx, sqlStr, shortURL, longURL, userIDInsert, time.Now())
 
 	if err != nil {
 		return err
