@@ -84,14 +84,14 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 		shortURL := req.PathValue("id")
 
-		shortURLExists, err := h.Service.CheckFlagDeleteExists(req.Context(), shortURL)
+		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(req.Context(), shortURL)
 
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if !shortURLExists {
+		if shortURLDeleted {
 			res.WriteHeader(http.StatusGone)
 			return
 		}
