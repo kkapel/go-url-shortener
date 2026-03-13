@@ -144,6 +144,8 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		isConflict := errors.Is(err, service.ErrConflict)
+
 		//Фомрмируем ответ
 		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
 		loger.Log.Info("APIPagePostJSON", zap.String("short_url", shortURL))
@@ -155,7 +157,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		}
 
 		res.Header().Set("content-type", "application/json")
-		if errors.Is(err, service.ErrConflict) {
+		if isConflict {
 			res.WriteHeader(http.StatusConflict)
 		} else {
 			res.WriteHeader(http.StatusCreated)
