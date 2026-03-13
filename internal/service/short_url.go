@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
@@ -30,6 +31,8 @@ func NewShortenerService(db *repository.DB, file *repository.Repsitory, localRep
 	return s
 }
 
+var ErrConflict = errors.New("url already exists")
+
 func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType string, action string) (string, error) {
 	var URL string
 	var err error
@@ -51,6 +54,12 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 		} else if URLType == "long" {
 			URL = s.localRepo.GetLongURL(inputURL)
 		}
+	}
+
+	var uniqueErr *repository.UniqueViolationError
+	if errors.As(err, &uniqueErr) {
+		// Возвращаем результат И специальную ошибку сервиса
+		return uniqueErr.LongURL, ErrConflict
 	}
 
 	if err != nil {

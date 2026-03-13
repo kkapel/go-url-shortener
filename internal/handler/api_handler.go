@@ -7,7 +7,6 @@ import (
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
-	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"io"
 	"net/http"
@@ -58,11 +57,10 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		shortURL, err := h.Service.GetURL(req.Context(), longURL, "short", "Post")
 
 		if err != nil {
-			var uniqueViolationError *repository.UniqueViolationError
 
-			if errors.As(err, &uniqueViolationError) {
+			if errors.Is(err, service.ErrConflict) {
 				res.WriteHeader(http.StatusConflict)
-				res.Write([]byte(h.Cfg.GetURLHost + "/" + uniqueViolationError.LongURL))
+				res.Write([]byte(h.Cfg.GetURLHost + "/" + shortURL))
 				return
 			}
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -141,15 +139,12 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 		shortURL, err := h.Service.GetURL(req.Context(), url.URL, "short", "Post")
 
-		var uniqueViolationError *repository.UniqueViolationError
-
-		if err != nil && !errors.As(err, &uniqueViolationError) {
+		if err != nil && !errors.Is(err, service.ErrConflict) {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		//Фомрмируем ответ
-		// в т.ч. для UniqueViolationError
 		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
 		loger.Log.Info("APIPagePostJSON", zap.String("short_url", shortURL))
 		resp, err := json.Marshal(resultJSON)
@@ -160,8 +155,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		}
 
 		res.Header().Set("content-type", "application/json")
-		if uniqueViolationError != nil {
-			//UniqueViolationError
+		if errors.Is(err, service.ErrConflict) {
 			res.WriteHeader(http.StatusConflict)
 		} else {
 			res.WriteHeader(http.StatusCreated)
