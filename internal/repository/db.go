@@ -303,6 +303,6 @@ func (db *DB) CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool
 		return false, nil
 	}
 
-	return true, nil
+	return exists, nil
 
 }
