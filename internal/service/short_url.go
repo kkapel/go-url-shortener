@@ -240,8 +240,7 @@ func (s *ShortenerService) fanIn(ctx context.Context, userID int, resultChs ...c
 
 func (s *ShortenerService) DeleteURLs(id int, data []string) {
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 
 	inputCh := generatorString(data)
 	fanoutCh := fanOut(inputCh)
