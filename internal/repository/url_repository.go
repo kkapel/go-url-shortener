@@ -94,7 +94,7 @@ func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType str
 
 }
 
-func WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string, mu *sync.Mutex) error {
+func (r *Repsitory) WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string, mu *sync.Mutex) error {
 
 	mu.Lock()
 	defer mu.Unlock()

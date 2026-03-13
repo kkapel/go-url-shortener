@@ -42,12 +42,12 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 	if s.dbRepo != nil {
 		URL, err = s.dbRepo.GetURLFromDB(ctx, inputURL, URLType, action)
 	} else if s.fileRepo != nil {
-		URL, fileStorage, err = s.fileRepo.GetURLFromFile(inputURL, filePath, URLType, mu)
+		URL, fileStorage, err = s.fileRepo.GetURLFromFile(inputURL, s.cfg.FileStoragePath, URLType, &s.fileRepo.Mu)
 	} else {
 		if URLType == "short" {
-			URL = localURL.GetShortURL(inputURL)
+			URL = s.localRepo.GetShortURL(inputURL)
 		} else if URLType == "long" {
-			URL = localURL.GetLongURL(inputURL)
+			URL = s.localRepo.GetLongURL(inputURL)
 		}
 	}
 
@@ -64,7 +64,7 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 		var userID int
 
 		//получаем userID
-		userID, ok := req.Context().Value(cookies.UserIDKey).(int)
+		userID, ok := ctx.Value(cookies.UserIDKey).(int)
 
 		if !ok {
 			userID = 0
@@ -78,12 +78,12 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 			userID = 0
 		}
 
-		if databaseDsn != "" {
-			err = repository.InsertIntoDB(req.Context(), URL, inputURL, userID)
-		} else if filePath != "" {
-			repository.WriteToFile(fileStorage, URL, inputURL, filePath, mu)
+		if s.dbRepo != nil {
+			err = s.dbRepo.InsertIntoDB(ctx, URL, inputURL, userID)
+		} else if s.fileRepo != nil {
+			err = s.fileRepo.WriteToFile(fileStorage, URL, inputURL, s.cfg.FileStoragePath, &s.fileRepo.Mu)
 		} else {
-			localURL.WriteLocalURL(inputURL, URL)
+			s.localRepo.WriteLocalURL(inputURL, URL)
 		}
 
 	}
@@ -114,4 +114,12 @@ func (s *ShortenerService) SetDeletedFlag(ctx context.Context, ids []string) err
 
 func (s *ShortenerService) CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
 	return s.dbRepo.CheckDeleteAvailable(ctx, userID, shortLink)
+}
+
+func (s *ShortenerService) GetLastUserID(ctx context.Context) (int, error) {
+	return s.dbRepo.GetLastUserID(ctx)
+}
+
+func (s *ShortenerService) InsertUserID(ctx context.Context, userID int, newToken string) error {
+	return s.dbRepo.InsertUserID(ctx, userID, newToken)
 }

@@ -31,6 +31,7 @@ func Run() error {
 	}
 
 	service := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg)
+	cookie := cookies.NewCookie(service)
 
 	// Закрываем БД-соединение
 	if databaseInstance != nil {
@@ -57,7 +58,7 @@ func Run() error {
 
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
-	r.Use(cookies.RequestCookies)
+	r.Use(cookie.RequestCookies)
 	r.Post("/", h.APIPagePost)
 	r.Post("/api/shorten", h.APIPagePostJSON)
 	r.Post("/api/shorten/batch", h.APIPagePostBatch)

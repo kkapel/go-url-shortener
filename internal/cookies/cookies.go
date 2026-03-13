@@ -3,7 +3,6 @@ package cookies
 import (
 	"context"
 	"fmt"
-	"go-url-shortener/internal/repository"
 	"net/http"
 	"time"
 
@@ -28,7 +27,20 @@ type Claims struct {
 	UserID int
 }
 
-func RequestCookies(h http.Handler) http.Handler {
+type UserProvider interface {
+	GetLastUserID(ctx context.Context) (int, error)
+	InsertUserID(ctx context.Context, id int, token string) error
+}
+
+type Cookie struct {
+	provider UserProvider
+}
+
+func NewCookie(p UserProvider) *Cookie {
+	return &Cookie{provider: p}
+}
+
+func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var newToken string
 		var userID int
@@ -36,7 +48,7 @@ func RequestCookies(h http.Handler) http.Handler {
 
 		if err == http.ErrNoCookie {
 			//Если куки нет, выдаем новую куку
-			newToken, userID, err = generateToken(r.Context())
+			newToken, userID, err = cookieStruct.generateToken(r.Context())
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -44,7 +56,7 @@ func RequestCookies(h http.Handler) http.Handler {
 			// другая ошибка
 			// тоже выдаем куку
 		} else if err != http.ErrNoCookie {
-			newToken, userID, err = generateToken(r.Context())
+			newToken, userID, err = cookieStruct.generateToken(r.Context())
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -67,7 +79,7 @@ func RequestCookies(h http.Handler) http.Handler {
 
 			// Если не проходит проверку подлинности, выдаем новую куку
 			if requestUserID == tokenIsNotValid {
-				newToken, userID, err = generateToken(r.Context())
+				newToken, userID, err = cookieStruct.generateToken(r.Context())
 
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
@@ -86,7 +98,7 @@ func RequestCookies(h http.Handler) http.Handler {
 			}
 			http.SetCookie(w, cookie)
 
-			repository.InsertUserID(r.Context(), userID, newToken)
+			cookieStruct.provider.InsertUserID(r.Context(), userID, newToken)
 		}
 
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
@@ -95,10 +107,10 @@ func RequestCookies(h http.Handler) http.Handler {
 	})
 }
 
-func generateToken(ctx context.Context) (string, int, error) {
+func (cookieStruct *Cookie) generateToken(ctx context.Context) (string, int, error) {
 	// Создаем jwt-строку
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-	userID, err := repository.GetLastUserID(ctx)
+	userID, err := cookieStruct.provider.GetLastUserID(ctx)
 
 	if err != nil {
 		return "", 0, err
