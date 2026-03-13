@@ -294,20 +294,13 @@ func (db *DB) CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool
 		return false, nil
 	}
 
-	sqlStr := "select short_link from short_url where short_link = $1 and deleted_flag = true"
+	var exists bool
+	sqlStr := "SELECT EXISTS(SELECT 1 FROM short_url WHERE short_link = $1 AND deleted_flag = true)"
 
-	rows, err := db.db.QueryContext(ctx, sqlStr, shortLink)
+	err := db.db.QueryRowContext(ctx, sqlStr, shortLink).Scan(&exists)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil // Строка не найдена
-		}
-		return false, err
-	}
-	defer rows.Close()
-
-	if err = rows.Err(); err != nil {
-		return false, err
+		return false, nil
 	}
 
 	return true, nil
