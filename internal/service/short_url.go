@@ -119,8 +119,8 @@ func (s *ShortenerService) GetURLsByUserID(ctx context.Context, userID int) (map
 	return s.dbRepo.GetURLsByUserID(ctx, userID)
 }
 
-func (s *ShortenerService) SetDeletedFlag(ctx context.Context, ids []string) error {
-	return s.dbRepo.SetDeletedFlag(ctx, ids)
+func (s *ShortenerService) SetDeletedFlag(ctx context.Context, ids []string, id int) error {
+	return s.dbRepo.SetDeletedFlag(ctx, ids, id)
 }
 
 func (s *ShortenerService) CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
@@ -150,14 +150,14 @@ func generatorString(input []string) chan string {
 	return inputCh
 }
 
-func (s *ShortenerService) batchWorkerDelete(ctx context.Context, inputCh <-chan string) {
+func (s *ShortenerService) batchWorkerDelete(ctx context.Context, inputCh <-chan string, userID int) {
 	var ids []string
 
 	for id := range inputCh {
 		ids = append(ids, id)
 
 		if len(ids) >= 100 { //Устанавливаем лимит для батча - 100
-			err := s.dbRepo.SetDeletedFlag(ctx, ids)
+			err := s.dbRepo.SetDeletedFlag(ctx, ids, userID)
 			if err != nil {
 				log.Printf("ошибка батч-удаления: %v", err)
 			}
@@ -166,7 +166,7 @@ func (s *ShortenerService) batchWorkerDelete(ctx context.Context, inputCh <-chan
 	}
 
 	if len(ids) > 0 {
-		err := s.SetDeletedFlag(ctx, ids)
+		err := s.SetDeletedFlag(ctx, ids, userID)
 		if err != nil {
 			log.Printf("ошибка батч-удаления: %v", err)
 		}
@@ -212,17 +212,21 @@ func (s *ShortenerService) fanIn(ctx context.Context, userID int, resultChs ...c
 
 			// получаем данные из канала
 			for data := range chClosure {
-				available, err := s.dbRepo.CheckDeleteAvailable(ctx, userID, data)
-				if err != nil {
-					// Логируем ошибку, но не роняем весь конвейер
-					log.Printf("ошибка проверки ссылки %s: %v", data, err)
-					continue
-				}
+				/*
+					available, err := s.dbRepo.CheckDeleteAvailable(ctx, userID, data)
+					if err != nil {
+						// Логируем ошибку, но не роняем весь конвейер
+						log.Printf("ошибка проверки ссылки %s: %v", data, err)
+						continue
+					}
 
-				// Если проверка прошла, то пишем в итоговый канал
-				if available {
-					finalCh <- data
-				}
+					// Если проверка прошла, то пишем в итоговый канал
+					if available {
+						finalCh <- data
+					}
+
+				*/
+				finalCh <- data
 			}
 		}()
 	}
@@ -245,6 +249,6 @@ func (s *ShortenerService) DeleteURLs(id int, data []string) {
 	inputCh := generatorString(data)
 	fanoutCh := fanOut(inputCh)
 	finalCh := s.fanIn(ctx, id, fanoutCh...)
-	s.batchWorkerDelete(ctx, finalCh)
+	s.batchWorkerDelete(ctx, finalCh, id)
 
 }

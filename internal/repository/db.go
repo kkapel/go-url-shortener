@@ -247,14 +247,14 @@ func (db *DB) GetURLsByUserID(ctx context.Context, userID int) (map[string]strin
 
 }
 
-func (db *DB) SetDeletedFlag(ctx context.Context, ids []string) error {
+func (db *DB) SetDeletedFlag(ctx context.Context, ids []string, id int) error {
 	if db == nil {
 		return nil
 	}
 
-	sqlStr := "update short_url set deleted_flag = true where user_id = ANY($1)"
+	sqlStr := "update short_url set deleted_flag = true where user_id = ANY($1) and short_link = $2"
 
-	_, err := db.db.ExecContext(ctx, sqlStr, pq.Array(ids))
+	_, err := db.db.ExecContext(ctx, sqlStr, id, pq.Array(ids))
 
 	if err != nil {
 		return err
