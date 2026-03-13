@@ -12,7 +12,7 @@ import (
 )
 
 type Repsitory struct {
-	Mu sync.Mutex
+	Mu sync.RWMutex
 }
 
 type URLFileStorage struct {
@@ -23,7 +23,7 @@ type URLFileStorage struct {
 
 func CreateRepository() *Repsitory {
 	return &Repsitory{
-		Mu: sync.Mutex{},
+		Mu: sync.RWMutex{},
 	}
 }
 
@@ -31,15 +31,15 @@ func CreateRepository() *Repsitory {
 // Если shortURL не найден, возвращается пустая строка
 // Если LongURL не найден, возращается ошибка
 // Возможные значения URLType: long, short
-func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType string, mu *sync.Mutex) (string, []URLFileStorage, error) {
+func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType string) (string, []URLFileStorage, error) {
 	var resultURL string
 	var URLFileStorages []URLFileStorage
 	loger.Log.Info("GetURLFromFile", zap.String("filePath", filePath))
 
 	// открываем файл
 	// если его нет, то создаем
-	mu.Lock()
-	defer mu.Unlock()
+	r.Mu.RLock()
+	defer r.Mu.RUnlock()
 
 	flag := os.O_RDONLY | os.O_CREATE
 	file, err := os.OpenFile(filePath, flag, 0666)
@@ -94,10 +94,10 @@ func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType str
 
 }
 
-func (r *Repsitory) WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string, mu *sync.Mutex) error {
+func (r *Repsitory) WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string) error {
 
-	mu.Lock()
-	defer mu.Unlock()
+	r.Mu.Lock()
+	defer r.Mu.Unlock()
 	loger.Log.Info("WriteToFile",
 		zap.String("Добавляем shortURL", shortURL),
 		zap.String("longUrl", longURL))

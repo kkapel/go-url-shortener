@@ -44,7 +44,7 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 	if s.dbRepo != nil {
 		URL, err = s.dbRepo.GetURLFromDB(ctx, inputURL, URLType, action)
 	} else if s.fileRepo != nil {
-		URL, fileStorage, err = s.fileRepo.GetURLFromFile(inputURL, s.cfg.FileStoragePath, URLType, &s.fileRepo.Mu)
+		URL, fileStorage, err = s.fileRepo.GetURLFromFile(inputURL, s.cfg.FileStoragePath, URLType)
 	} else {
 		if URLType == "short" {
 			URL = s.localRepo.GetShortURL(inputURL)
@@ -83,7 +83,7 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 		if s.dbRepo != nil {
 			err = s.dbRepo.InsertIntoDB(ctx, URL, inputURL, userID)
 		} else if s.fileRepo != nil {
-			err = s.fileRepo.WriteToFile(fileStorage, URL, inputURL, s.cfg.FileStoragePath, &s.fileRepo.Mu)
+			err = s.fileRepo.WriteToFile(fileStorage, URL, inputURL, s.cfg.FileStoragePath)
 		} else {
 			s.localRepo.WriteLocalURL(inputURL, URL)
 		}
