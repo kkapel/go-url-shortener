@@ -354,7 +354,7 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// Взаимодействуем с сервисом и БД в отдельной go-рутине
-		go h.Service.DeleteURLs(id, arrayURLs)
+		h.Service.DeleteURLs(id, arrayURLs)
 
 		res.WriteHeader(http.StatusAccepted)
 

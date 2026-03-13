@@ -163,12 +163,12 @@ func (s *ShortenerService) batchWorkerDelete(ctx context.Context, inputCh <-chan
 			}
 			ids = ids[:0]
 		}
+	}
 
-		if len(ids) > 0 {
-			err := s.SetDeletedFlag(ctx, ids)
-			if err != nil {
-				log.Printf("ошибка батч-удаления: %v", err)
-			}
+	if len(ids) > 0 {
+		err := s.SetDeletedFlag(ctx, ids)
+		if err != nil {
+			log.Printf("ошибка батч-удаления: %v", err)
 		}
 	}
 
@@ -225,8 +225,6 @@ func (s *ShortenerService) fanIn(ctx context.Context, userID int, resultChs ...c
 				}
 			}
 		}()
-
-		return finalCh
 	}
 
 	go func() {
