@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,9 +10,7 @@ import (
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"io"
-	"log"
 	"net/http"
-	"sync"
 
 	"go.uber.org/zap"
 )
@@ -354,24 +351,14 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 		}
 
 		var arrayURLs []string
-
 		// Парсим
 		if err := json.Unmarshal(body, &arrayURLs); err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Взаимодействуем с БД в отдельной go-рутине
-		go func(data []string) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			inputCh := generatorString(arrayURLs)
-			fanoutCh := fanOut(inputCh)
-			finalCh := fanIn(ctx, id, h, fanoutCh...)
-			batchWorkerDelete(ctx, finalCh, h)
-
-		}(arrayURLs)
+		// Взаимодействуем с сервисом и БД в отдельной go-рутине
+		go h.Service.DeleteURLs(id, arrayURLs)
 
 		res.WriteHeader(http.StatusAccepted)
 
@@ -382,109 +369,4 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 
 func errorResponse(res http.ResponseWriter) {
 	res.WriteHeader(http.StatusBadRequest)
-}
-
-// generator функция для массива строк
-func generatorString(input []string) chan string {
-	inputCh := make(chan string)
-
-	go func() {
-		defer close(inputCh)
-
-		for _, data := range input {
-			inputCh <- data
-		}
-	}()
-
-	return inputCh
-}
-
-func batchWorkerDelete(ctx context.Context, inputCh <-chan string, h *Handler) {
-	var ids []string
-
-	for id := range inputCh {
-		ids = append(ids, id)
-
-		if len(ids) >= 100 { //Устанавливаем лимит для батча - 100
-			err := h.Service.SetDeletedFlag(ctx, ids)
-			if err != nil {
-				log.Printf("ошибка батч-удаления: %v", err)
-			}
-			ids = ids[:0]
-		}
-
-		if len(ids) > 0 {
-			err := h.Service.SetDeletedFlag(ctx, ids)
-			if err != nil {
-				log.Printf("ошибка батч-удаления: %v", err)
-			}
-		}
-	}
-
-}
-
-// fanOut принимает канал данных, порождает 10 горутин
-func fanOut(inputCh chan string) []chan string {
-	// количество горутин
-	numWorkers := 10
-	// каналы, в которые отправляются результаты
-	channels := make([]chan string, numWorkers)
-
-	for i := 0; i < numWorkers; i++ {
-		// отправляем в слайс каналов
-		channels[i] = inputCh
-	}
-
-	// возвращаем слайс каналов
-	return channels
-}
-
-// fanIn объединяет несколько каналов resultChs в один.
-func fanIn(ctx context.Context, userID int, h *Handler, resultChs ...chan string) chan string {
-	// конечный выходной канал в который отправляем данные из всех каналов из слайса, назовём его результирующим
-	finalCh := make(chan string)
-
-	// понадобится для ожидания всех горутин
-	var wg sync.WaitGroup
-
-	// перебираем все входящие каналы
-	for _, ch := range resultChs {
-		// в горутину передавать переменную цикла нельзя, поэтому делаем так
-		chClosure := ch
-
-		// инкрементируем счётчик горутин, которые нужно подождать
-		wg.Add(1)
-
-		go func() {
-			// откладываем сообщение о том, что горутина завершилась
-			defer wg.Done()
-
-			// получаем данные из канала
-			for data := range chClosure {
-				available, err := h.Service.CheckDeleteAvailable(ctx, userID, data)
-				if err != nil {
-					// Логируем ошибку, но не роняем весь конвейер
-					log.Printf("ошибка проверки ссылки %s: %v", data, err)
-					continue
-				}
-
-				// Если проверка прошла, то пишем в итоговый канал
-				if available {
-					finalCh <- data
-				}
-			}
-		}()
-
-		return finalCh
-	}
-
-	go func() {
-		// ждём завершения всех горутин
-		wg.Wait()
-		// когда все горутины завершились, закрываем результирующий канал
-		close(finalCh)
-	}()
-
-	// возвращаем результирующий канал
-	return finalCh
 }
