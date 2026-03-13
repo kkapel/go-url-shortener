@@ -252,7 +252,7 @@ func (db *DB) SetDeletedFlag(ctx context.Context, ids []string, id int) error {
 		return nil
 	}
 
-	sqlStr := "update short_url set deleted_flag = true where user_id = ANY($1) and short_link = $2"
+	sqlStr := "update short_url set deleted_flag = true where user_id = $1 and short_link = ANY($2)"
 
 	_, err := db.db.ExecContext(ctx, sqlStr, id, pq.Array(ids))
 
