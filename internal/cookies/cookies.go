@@ -11,10 +11,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	UserIDNotFound    = -2
-	tokenIsNotValid   = -1
-	tokerParsingError = -100
+var (
+	ErrUserIDNotFound  = errors.New("UserIDNotFound")
+	ErrTokenIsNotValid = errors.New("TokenIsNotValid")
+	TokenParsingError  = errors.New("TokenParsingError")
 )
 
 const SecretKey = "testKey1" // убрать в бд
@@ -68,22 +68,16 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 		} else {
 
 			// Проверяем подлинность куки
-			requestUserID, err := GetUserID(cookie.Value)
-
-			if err != nil {
-				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+			_, err := GetUserID(cookie.Value)
 
 			// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
-			if requestUserID == UserIDNotFound {
+			if err == ErrUserIDNotFound {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			// Если не проходит проверку подлинности, выдаем новую куку
-			if requestUserID == tokenIsNotValid {
+			if err == ErrTokenIsNotValid {
 				newToken, userID, err = cookieStruct.generateToken(r.Context())
 
 				if err != nil {
@@ -91,6 +85,12 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
+			}
+
+			if err != nil {
+				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 
 		}
@@ -146,18 +146,18 @@ func GetUserID(tokenString string) (int, error) {
 			return []byte(SecretKey), nil
 		})
 	if err != nil {
-		return tokerParsingError, err
+		return 0, TokenParsingError
 	}
 
 	if !token.Valid {
 		loger.Log.Info("cookies.go", zap.String("Func GetUserID", "Token is not valid"))
 
-		return tokenIsNotValid, nil
+		return 0, ErrTokenIsNotValid
 	}
 
 	//Если userID не заполнен, будет по умолчанию значение 0
 	if claims.UserID < 1 {
-		return UserIDNotFound, nil
+		return 0, ErrUserIDNotFound
 	}
 
 	loger.Log.Info("cookies.go", zap.String("Func GetUserID", "Token is valid"))

@@ -77,17 +77,15 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 		//получаем userID
 		userID, err := cookies.GetUserValue(ctx)
 
-		if err != nil {
+		if err == cookies.ErrUserIDNotFound {
+			userID = 0
+		} else if err != nil {
 			return "", err
 		}
 
 		loger.Log.Info("Cookie value",
 			zap.Int("userID", userID),
 		)
-
-		if userID == cookies.UserIDNotFound {
-			userID = 0
-		}
 
 		if s.dbRepo != nil {
 			err = s.dbRepo.InsertIntoDB(ctx, URL, inputURL, userID)
