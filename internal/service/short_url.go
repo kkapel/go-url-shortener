@@ -200,8 +200,6 @@ func (s *ShortenerService) fanIn(ctx context.Context, userID int, resultChs ...c
 
 	// перебираем все входящие каналы
 	for _, ch := range resultChs {
-		// в горутину передавать переменную цикла нельзя, поэтому делаем так
-		chClosure := ch
 
 		// инкрементируем счётчик горутин, которые нужно подождать
 		wg.Add(1)
@@ -211,7 +209,7 @@ func (s *ShortenerService) fanIn(ctx context.Context, userID int, resultChs ...c
 			defer wg.Done()
 
 			// получаем данные из канала
-			for data := range chClosure {
+			for data := range ch {
 				/*
 					available, err := s.dbRepo.CheckDeleteAvailable(ctx, userID, data)
 					if err != nil {
