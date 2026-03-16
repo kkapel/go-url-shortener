@@ -7,6 +7,8 @@ import (
 	"go-url-shortener/internal/loger"
 	"time"
 
+	"github.com/golang-migrate/migrate"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/lib/pq"
 	"go.uber.org/zap"
@@ -51,6 +53,10 @@ func InitDB(dbConnect string) (*DB, error) {
 		return nil, err
 	}
 
+	if err = migrateDB(dbConnect); err != nil {
+		return nil, err
+	}
+
 	/*
 		query :=
 			`create table IF NOT EXISTS short_url
@@ -86,6 +92,15 @@ func InitDB(dbConnect string) (*DB, error) {
 	*/
 
 	return databaseInstance, nil
+}
+
+func migrateDB(dbConnect string) error {
+	m, err := migrate.New("file:///migrations", dbConnect)
+	if err != nil {
+		return err
+	}
+	m.Up()
+	return nil
 }
 
 func (db *DB) CheckConnect() error {
