@@ -1,7 +1,7 @@
 -- Создание таблицы short_url
 create table if not exists short_url
 (
-id serial primary key,
+id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 short_link VARCHAR(100) UNIQUE,
 long_link VARCHAR(500) UNIQUE,
 user_id int,

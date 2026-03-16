@@ -1,7 +1,7 @@
 -- Создание таблицы users_token
 create table if not exists users_token
 (
-id serial primary key,
+id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 accessToken VARCHAR(100) UNIQUE
 );
 
