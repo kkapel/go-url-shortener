@@ -1,7 +1,6 @@
 package router
 
 import (
-	"fmt"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/encoding"
@@ -21,7 +20,6 @@ func Run() error {
 	}
 	defer loger.Log.Sync()
 	loger.Log.Info("Init server start")
-	fmt.Println("Init server start")
 	cfg := config.CreateConfig()
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
@@ -39,7 +37,6 @@ func Run() error {
 	}
 
 	loger.Log.Info("Init server running")
-	fmt.Println("Init server running")
 
 	h := &handler.Handler{
 		Cfg:     cfg,

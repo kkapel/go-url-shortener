@@ -2,7 +2,6 @@ package cookies
 
 import (
 	"context"
-	"fmt"
 	"go-url-shortener/internal/loger"
 	"net/http"
 	"time"
@@ -150,7 +149,8 @@ func GetUserID(tokenString string) (int, error) {
 	}
 
 	if !token.Valid {
-		fmt.Println("Token is not valid")
+		loger.Log.Info("cookies.go", zap.String("Func GetUserID", "Token is not valid"))
+
 		return tokenIsNotValid, nil
 	}
 
@@ -159,6 +159,6 @@ func GetUserID(tokenString string) (int, error) {
 		return UserIDNotFound, nil
 	}
 
-	fmt.Println("Token is valid")
+	loger.Log.Info("cookies.go", zap.String("Func GetUserID", "Token is valid"))
 	return claims.UserID, nil
 }
