@@ -75,10 +75,10 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 		var userID int
 
 		//получаем userID
-		userID, ok := ctx.Value(cookies.GetUserIDKey()).(int)
+		userID, err := cookies.GetUserValue(ctx)
 
-		if !ok {
-			userID = 0
+		if err != nil {
+			return "", err
 		}
 
 		loger.Log.Info("Cookie value",

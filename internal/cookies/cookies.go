@@ -2,6 +2,7 @@ package cookies
 
 import (
 	"context"
+	"errors"
 	"go-url-shortener/internal/loger"
 	"net/http"
 	"time"
@@ -163,10 +164,17 @@ func GetUserID(tokenString string) (int, error) {
 	return claims.UserID, nil
 }
 
-func GetUserIDKey() UserIDType {
-	if userIDKey != "" {
-		return userIDKey
+func GetUserValue(ctx context.Context) (int, error) {
+	val := ctx.Value(userIDKey)
+	if val == nil {
+		return 0, nil
 	}
 
-	return ""
+	userID, ok := val.(int)
+
+	if !ok {
+		return 0, errors.New("Invalid userID in context")
+	}
+
+	return userID, nil
 }
