@@ -7,7 +7,8 @@ import (
 	"go-url-shortener/internal/loger"
 	"time"
 
-	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/lib/pq"
@@ -95,11 +96,13 @@ func InitDB(dbConnect string) (*DB, error) {
 }
 
 func migrateDB(dbConnect string) error {
-	m, err := migrate.New("file:///migrations", dbConnect)
+	m, err := migrate.New("file://migrations", dbConnect)
 	if err != nil {
 		return err
 	}
-	m.Up()
+	if err = m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
 	return nil
 }
 
