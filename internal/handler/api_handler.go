@@ -9,6 +9,7 @@ import (
 	"go-url-shortener/internal/service"
 	"io"
 	"net/http"
+	"net/url"
 
 	"go.uber.org/zap"
 )
@@ -54,22 +55,30 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 
 		longURL := string(body)
 		shortURL, err := h.Service.GetURL(req.Context(), longURL, "short", "Post")
+		url, errorJoinPath := url.JoinPath(h.Cfg.GetURLHost, shortURL)
 
 		if err != nil {
 			loger.Log.Error("api_handler.go", zap.String("Function APIPagePost", err.Error()))
 
 			if errors.Is(err, service.ErrConflict) {
 				res.WriteHeader(http.StatusConflict)
-				res.Write([]byte(h.Cfg.GetURLHost + "/" + shortURL))
+				res.Write([]byte(url))
 				return
 			}
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		if errorJoinPath != nil {
+			loger.Log.Error("api_handler.go", zap.String("errorJoinPath", errorJoinPath.Error()))
+			http.Error(res, errorJoinPath.Error(), http.StatusInternalServerError)
+			return
+
+		}
+
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(h.Cfg.GetURLHost + "/" + shortURL))
+		res.Write([]byte(url))
 
 	default:
 		res.WriteHeader(http.StatusMethodNotAllowed)
