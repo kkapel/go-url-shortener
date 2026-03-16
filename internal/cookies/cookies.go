@@ -19,9 +19,9 @@ const (
 const SecretKey = "testKey1" // убрать в бд
 const TokenExp = time.Hour * 3
 
-type userIDType string
+type UserIDType string
 
-const UserIDKey userIDType = "userID"
+const userIDKey UserIDType = "userID"
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -106,7 +106,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			cookieStruct.provider.InsertUserID(r.Context(), userID, newToken)
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		h.ServeHTTP(w, r.WithContext(ctx))
 
 	})
@@ -161,4 +161,12 @@ func GetUserID(tokenString string) (int, error) {
 
 	loger.Log.Info("cookies.go", zap.String("Func GetUserID", "Token is valid"))
 	return claims.UserID, nil
+}
+
+func GetUserIDKey() UserIDType {
+	if userIDKey != "" {
+		return userIDKey
+	}
+
+	return ""
 }
