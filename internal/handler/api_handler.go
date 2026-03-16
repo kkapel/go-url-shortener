@@ -57,6 +57,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 		shortURL, err := h.Service.GetURL(req.Context(), longURL, "short", "Post")
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePost", err.Error()))
 
 			if errors.Is(err, service.ErrConflict) {
 				res.WriteHeader(http.StatusConflict)
@@ -87,6 +88,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(req.Context(), shortURL)
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGet", err.Error()))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -99,6 +101,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 		longURL, err := h.Service.GetURL(req.Context(), shortURL, "long", "Get")
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGet", err.Error()))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -133,6 +136,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		loger.Log.Info("APIPagePostJSON", zap.Any("Request Body", body))
 
 		if err := json.Unmarshal(body, &url); err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -140,6 +144,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		shortURL, err := h.Service.GetURL(req.Context(), url.URL, "short", "Post")
 
 		if err != nil && !errors.Is(err, service.ErrConflict) {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -152,6 +157,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		resp, err := json.Marshal(resultJSON)
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -176,6 +182,7 @@ func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 	case http.MethodGet:
 
 		if err := h.Service.CheckConnect(req.Context()); err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIGetPing", err.Error()))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -203,6 +210,8 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 
 		if err := json.Unmarshal(body, &batchJSON); err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostBatch", err.Error()))
+
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -216,6 +225,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 
 			if err != nil {
 				loger.Log.Error("Ошибка в методе GetURL", zap.String("error", err.Error()))
+
 				http.Error(res, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -232,6 +242,8 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		resp, err := json.Marshal(BatchJSONResponseVar)
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostBatch", err.Error()))
+
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -275,6 +287,8 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		urls, err := h.Service.GetURLsByUserID(req.Context(), id)
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGetUserURLs", err.Error()))
+
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -298,6 +312,8 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		resp, err := json.Marshal(urlsResponse)
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGetUserURLs", err.Error()))
+
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -349,6 +365,8 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 		var arrayURLs []string
 		// Парсим
 		if err := json.Unmarshal(body, &arrayURLs); err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIDeleteURLs", err.Error()))
+
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}

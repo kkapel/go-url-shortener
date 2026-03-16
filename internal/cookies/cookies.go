@@ -3,10 +3,12 @@ package cookies
 import (
 	"context"
 	"fmt"
+	"go-url-shortener/internal/loger"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"go.uber.org/zap"
 )
 
 const (
@@ -50,6 +52,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			//Если куки нет, выдаем новую куку
 			newToken, userID, err = cookieStruct.generateToken(r.Context())
 			if err != nil {
+				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -58,6 +61,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 		} else if err != http.ErrNoCookie {
 			newToken, userID, err = cookieStruct.generateToken(r.Context())
 			if err != nil {
+				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -67,6 +71,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			requestUserID, err := GetUserID(cookie.Value)
 
 			if err != nil {
+				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -82,6 +87,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 				newToken, userID, err = cookieStruct.generateToken(r.Context())
 
 				if err != nil {
+					loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
