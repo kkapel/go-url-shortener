@@ -12,7 +12,7 @@ import (
 )
 
 type Repsitory struct {
-	Mu sync.RWMutex
+	mu sync.RWMutex
 }
 
 type URLFileStorage struct {
@@ -23,7 +23,7 @@ type URLFileStorage struct {
 
 func CreateRepository() *Repsitory {
 	return &Repsitory{
-		Mu: sync.RWMutex{},
+		mu: sync.RWMutex{},
 	}
 }
 
@@ -38,8 +38,8 @@ func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType str
 
 	// открываем файл
 	// если его нет, то создаем
-	r.Mu.RLock()
-	defer r.Mu.RUnlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	flag := os.O_RDONLY | os.O_CREATE
 	file, err := os.OpenFile(filePath, flag, 0666)
@@ -96,8 +96,8 @@ func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType str
 
 func (r *Repsitory) WriteToFile(URLFileStorages []URLFileStorage, shortURL string, longURL string, filePath string) error {
 
-	r.Mu.Lock()
-	defer r.Mu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	loger.Log.Info("WriteToFile",
 		zap.String("Добавляем shortURL", shortURL),
 		zap.String("longUrl", longURL))
