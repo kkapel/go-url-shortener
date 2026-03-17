@@ -121,10 +121,6 @@ func (s *ShortenerService) SetDeletedFlag(ctx context.Context, ids []string, id 
 	return s.dbRepo.SetDeletedFlag(ctx, ids, id)
 }
 
-func (s *ShortenerService) CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
-	return s.dbRepo.CheckDeleteAvailable(ctx, userID, shortLink)
-}
-
 func (s *ShortenerService) GetLastUserID(ctx context.Context) (int, error) {
 	return s.dbRepo.GetLastUserID(ctx)
 }
@@ -208,20 +204,6 @@ func (s *ShortenerService) fanIn(ctx context.Context, userID int, resultChs ...c
 
 			// получаем данные из канала
 			for data := range ch {
-				/*
-					available, err := s.dbRepo.CheckDeleteAvailable(ctx, userID, data)
-					if err != nil {
-						// Логируем ошибку, но не роняем весь конвейер
-						log.Printf("ошибка проверки ссылки %s: %v", data, err)
-						continue
-					}
-
-					// Если проверка прошла, то пишем в итоговый канал
-					if available {
-						finalCh <- data
-					}
-
-				*/
 				finalCh <- data
 			}
 		}()

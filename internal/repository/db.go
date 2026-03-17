@@ -284,31 +284,6 @@ func (db *DB) SetDeletedFlag(ctx context.Context, ids []string, id int) error {
 
 }
 
-func (db *DB) CheckDeleteAvailable(ctx context.Context, userID int, shortLink string) (bool, error) {
-
-	if db == nil {
-		return false, nil
-	}
-
-	sqlStr := "select short_link from short_url where user_id = $1 and short_link = $2"
-
-	rows, err := db.db.QueryContext(ctx, sqlStr, userID, shortLink)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil // Строка не найдена
-		}
-		return false, err
-	}
-	defer rows.Close()
-
-	if err = rows.Err(); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
 func (db *DB) CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool, error) {
 	if db == nil {
 		return false, nil
