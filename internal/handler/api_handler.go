@@ -3,22 +3,20 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"go-url-shortener/internal/config"
+	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
-	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"io"
 	"net/http"
+	"net/url"
 
 	"go.uber.org/zap"
 )
 
 type Handler struct {
-	Cfg *config.Config
-	Rep *repository.Repsitory
-	DB  *repository.DB
-	URL *repository.URL
+	Cfg     *config.Config
+	Service *service.ShortenerService
 }
 
 type URL struct {
@@ -39,35 +37,48 @@ type BatchJSONResponse struct {
 	ShortURL      string `json:"short_url"`
 }
 
+type ShortURLByUserResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
 		// Читаем тело запроса
-		fmt.Println("Метод ApiPagePost")
+		loger.Log.Info("api_handler.go", zap.String("Function APIPagePost", "Start"))
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
-			http.Error(res, "Cannot read request body", http.StatusBadRequest)
+			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
 		longURL := string(body)
-		shortURL, err := service.GetURL(longURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+		shortURL, err := h.Service.GetURL(req.Context(), longURL, "short", "Post")
+		url, errorJoinPath := url.JoinPath(h.Cfg.GetURLHost, shortURL)
 
 		if err != nil {
-			var uniqueViolationError *repository.UniqueViolationError
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePost", err.Error()))
 
-			if errors.As(err, &uniqueViolationError) {
+			if errors.Is(err, service.ErrConflict) {
 				res.WriteHeader(http.StatusConflict)
-				res.Write([]byte(h.Cfg.GetURLHost + "/" + uniqueViolationError.LongURL))
+				res.Write([]byte(url))
 				return
 			}
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
+		}
+
+		if errorJoinPath != nil {
+			loger.Log.Error("api_handler.go", zap.String("errorJoinPath", errorJoinPath.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+
 		}
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(h.Cfg.GetURLHost + "/" + shortURL))
+		res.Write([]byte(url))
 
 	default:
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -81,9 +92,24 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 		loger.Log.Info("APIPageGet", zap.Any("Request Body", req.Body))
 
 		shortURL := req.PathValue("id")
-		longURL, err := service.GetURL(shortURL, h.Cfg.FileStoragePath, "long", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+
+		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(req.Context(), shortURL)
 
 		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGet", err.Error()))
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if shortURLDeleted {
+			res.WriteHeader(http.StatusGone)
+			return
+		}
+
+		longURL, err := h.Service.GetURL(req.Context(), shortURL, "long", "Get")
+
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGet", err.Error()))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -110,7 +136,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		var resultJSON ResultJSON
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
-			http.Error(res, "Cannot read request body", http.StatusBadRequest)
+			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		defer req.Body.Close()
@@ -118,33 +144,34 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 		loger.Log.Info("APIPagePostJSON", zap.Any("Request Body", body))
 
 		if err := json.Unmarshal(body, &url); err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		shortURL, err := service.GetURL(url.URL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+		shortURL, err := h.Service.GetURL(req.Context(), url.URL, "short", "Post")
 
-		var uniqueViolationError *repository.UniqueViolationError
-
-		if err != nil && !errors.As(err, &uniqueViolationError) {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+		if err != nil && !errors.Is(err, service.ErrConflict) {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
+
+		isConflict := errors.Is(err, service.ErrConflict)
 
 		//Фомрмируем ответ
-		// в т.ч. для UniqueViolationError
 		resultJSON.Result = h.Cfg.GetURLHost + "/" + shortURL
 		loger.Log.Info("APIPagePostJSON", zap.String("short_url", shortURL))
 		resp, err := json.Marshal(resultJSON)
 
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
 		res.Header().Set("content-type", "application/json")
-		if uniqueViolationError != nil {
-			//UniqueViolationError
+		if isConflict {
 			res.WriteHeader(http.StatusConflict)
 		} else {
 			res.WriteHeader(http.StatusCreated)
@@ -159,14 +186,11 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 
-	if h.DB == nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	switch req.Method {
 	case http.MethodGet:
 
-		if err := h.DB.CheckConnect(); err != nil {
+		if err := h.Service.CheckConnect(req.Context()); err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIGetPing", err.Error()))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -180,10 +204,6 @@ func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 
 func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 	loger.Log.Info("APIPagePostBatch starts")
-	if h.DB == nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 
 	switch req.Method {
 	case http.MethodPost:
@@ -192,13 +212,15 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		var BatchJSONResponseVar []BatchJSONResponse
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
-			http.Error(res, "Cannot read request body", http.StatusBadRequest)
+			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		defer req.Body.Close()
 
 		if err := json.Unmarshal(body, &batchJSON); err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostBatch", err.Error()))
+
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
@@ -207,11 +229,12 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		//Получаем короткий URL
 		//Проходим по циклу оригинальных(длинных) URL
 		for i := range batchJSON {
-			shortURL, err := service.GetURL(batchJSON[i].OriginalURL, h.Cfg.FileStoragePath, "short", &h.Rep.Mu, h.Cfg.DBString, h.DB, req, h.URL)
+			shortURL, err := h.Service.GetURL(req.Context(), batchJSON[i].OriginalURL, "short", "Post")
 
 			if err != nil {
 				loger.Log.Error("Ошибка в методе GetURL", zap.String("error", err.Error()))
-				http.Error(res, err.Error(), http.StatusInternalServerError)
+
+				http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 
@@ -227,7 +250,9 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		resp, err := json.Marshal(BatchJSONResponseVar)
 
 		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostBatch", err.Error()))
+
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
@@ -235,6 +260,129 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusCreated)
 		loger.Log.Info("APIPagePostBatch", zap.String("result", string(resp)))
 		res.Write(resp)
+
+	default:
+		errorResponse(res)
+	}
+}
+
+// Хэндлер получения ссылок юзера
+func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		// Получаем из куки UserID
+		cookie, err := req.Cookie("access_token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				res.WriteHeader(http.StatusNoContent)
+				return
+			} else {
+				http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+		}
+
+		id, err := cookies.GetUserID(cookie.Value)
+
+		loger.Log.Info("APIPageGetUserURLs", zap.Int("input id", id))
+
+		if err != nil {
+			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		// Получаем список url-ов из БД
+		urls, err := h.Service.GetURLsByUserID(req.Context(), id)
+
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGetUserURLs", err.Error()))
+
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if len(urls) == 0 {
+			res.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		// Заполняем ответ
+		var urlsResponse []ShortURLByUserResponse
+		for shortURL, longURL := range urls {
+			shortURLByUserResponseVar := &ShortURLByUserResponse{
+				ShortURL:    h.Cfg.GetURLHost + "/" + shortURL,
+				OriginalURL: longURL,
+			}
+
+			urlsResponse = append(urlsResponse, *shortURLByUserResponseVar)
+		}
+
+		resp, err := json.Marshal(urlsResponse)
+
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGetUserURLs", err.Error()))
+
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		res.Header().Set("content-type", "application/json")
+		res.WriteHeader(http.StatusOK)
+		loger.Log.Info("APIPageGetUserURLs", zap.String("result", string(resp)))
+		res.Write(resp)
+
+	default:
+		errorResponse(res)
+	}
+
+}
+
+func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodDelete:
+		// Читаем тело запроса (JSON-массив)
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+		defer req.Body.Close()
+
+		// Получаем из куки UserID
+		// Можно потом вынести в отдельный метод
+		cookie, err := req.Cookie("access_token")
+		if err != nil {
+			if err == http.ErrNoCookie {
+				res.WriteHeader(http.StatusNoContent)
+				return
+			} else {
+				http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+		}
+
+		id, err := cookies.GetUserID(cookie.Value)
+
+		loger.Log.Info("APIPageGetUserURLs", zap.Int("input id", id))
+
+		if err != nil {
+			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		var arrayURLs []string
+		// Парсим
+		if err := json.Unmarshal(body, &arrayURLs); err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIDeleteURLs", err.Error()))
+
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		// Взаимодействуем с сервисом и БД в отдельной go-рутине
+		h.Service.DeleteURLs(id, arrayURLs)
+
+		res.WriteHeader(http.StatusAccepted)
 
 	default:
 		errorResponse(res)

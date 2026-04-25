@@ -5,6 +5,7 @@ import (
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
+	"go-url-shortener/internal/service"
 	"net/http"
 	"net/http/httptest"
 	"path"
@@ -50,9 +51,12 @@ func TestAPIHandler(t *testing.T) {
 		GetURLHost:      "http://localhost:8080",
 		FileStoragePath: filepath.Join(".", "storage.txt"),
 	}
+	fileRepo := repository.CreateRepository()
+	urlLocal := repository.NewURLRepository()
+	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg)
 	h := &Handler{
-		Cfg: testCfg,
-		Rep: repository.CreateRepository(),
+		Cfg:     testCfg,
+		Service: svc,
 	}
 
 	for _, test := range tests {
@@ -133,9 +137,13 @@ func TestAPIHandlerJSON(t *testing.T) {
 		GetURLHost:      "http://localhost:8080",
 		FileStoragePath: filepath.Join(".", "storage.txt"),
 	}
+
+	fileRepo := repository.CreateRepository()
+	urlLocal := repository.NewURLRepository()
+	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg)
 	h := &Handler{
-		Cfg: testCfg,
-		Rep: repository.CreateRepository(),
+		Cfg:     testCfg,
+		Service: svc,
 	}
 
 	for _, test := range tests {
@@ -221,17 +229,15 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 		DBString:        "postgres://postgres:admin@localhost:5432/postgres?sslmode=disable",
 	}
 
-	db, err := repository.InitDB(testCfg.DBString)
-	require.NoError(t, err)
-
-	err = loger.Initialize("INFO")
-	require.NoError(t, err)
 	defer loger.Log.Sync()
 
+	fileRepo := repository.CreateRepository()
+	urlLocal := repository.NewURLRepository()
+	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg)
+
 	h := &Handler{
-		Cfg: testCfg,
-		Rep: repository.CreateRepository(),
-		DB:  db,
+		Cfg:     testCfg,
+		Service: svc,
 	}
 
 	for _, test := range tests {

@@ -2,9 +2,12 @@ package encoding
 
 import (
 	"compress/gzip"
+	"go-url-shortener/internal/loger"
 	"io"
 	"net/http"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 // compressWriter реализует интерфейс http.ResponseWriter и позволяет прозрачно для сервера
@@ -95,6 +98,7 @@ func RequestEncoding(h http.Handler) http.Handler {
 			cr, err := newCompressReader(r.Body)
 
 			if err != nil {
+				loger.Log.Error("gzip_internal.go", zap.String("Function  RequestEncoding", err.Error()))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
