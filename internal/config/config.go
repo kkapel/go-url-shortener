@@ -14,6 +14,7 @@ type ConfigVariable struct {
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	DBString        string `env:"DATABASE_DSN"`
 	FlagAuditFile   string `env:"AUDIT_FILE"`
+	FlagAuditURL    string `env:"AUDIT_URL"`
 }
 
 type Config struct {
@@ -21,12 +22,14 @@ type Config struct {
 	GetURLHost      string
 	FileStoragePath string
 	DBString        string
+	FlagAuditFile   string
+	FlagAuditURL    string
 }
 
 func CreateConfig() *Config {
 	//Если указана переменная окружения, то используется она.
 	var configVariable ConfigVariable
-	var resultHost, resultGetURLHost, resultFileStoragePath, resultDBString, resultAuditFile string
+	var resultHost, resultGetURLHost, resultFileStoragePath, resultDBString, resultAuditFile, resultAuditURL string
 
 	err := env.Parse(&configVariable)
 	if err != nil {
@@ -38,6 +41,7 @@ func CreateConfig() *Config {
 	varFileStorePath := configVariable.FileStoragePath
 	varDBString := configVariable.DBString
 	varAuditFile := configVariable.FlagAuditFile
+	varAuditURL := configVariable.FlagAuditURL
 
 	//Если нет переменной окружения, но есть аргумент командной строки (флаг), то используется он.
 	flagHost := flag.String("a", "", "host. default value: localhost")
@@ -45,6 +49,7 @@ func CreateConfig() *Config {
 	flagFileStoragePath := flag.String("f", "", "local file storage path")
 	flagDB := flag.String("d", "", "db connect string")
 	flagAuditFile := flag.String("audit-file", "", "audit file path")
+	flagAuditURL := flag.String("audit-url", "", "audit url path")
 	flag.Parse()
 
 	if varHost != "" {
@@ -93,15 +98,28 @@ func CreateConfig() *Config {
 		resultAuditFile = ""
 	}
 
+	// audit url
+	switch {
+	case varAuditURL != "":
+		resultAuditURL = varAuditURL
+	case *flagAuditURL != "":
+		resultAuditURL = *flagAuditURL
+	default:
+		resultAuditURL = ""
+	}
+
 	log.Printf("%s", "Переменная varFileStorePath в функции CreateConfig: "+varFileStorePath)
 	log.Printf("%s", "Переменная flagFileStoragePath в функции CreateConfig: "+*flagFileStoragePath)
 	log.Printf("%s", "Переменная resultFileStoragePath в функции CreateConfig: "+resultFileStoragePath)
 	log.Printf("%s", "Переменная resultAuditFile в функции CreateConfig: "+resultAuditFile)
+	log.Printf("%s", "Переменная resultAuditURL в функции CreateConfig: "+resultAuditURL)
 
 	return &Config{
 		Host:            resultHost,
 		GetURLHost:      resultGetURLHost,
 		FileStoragePath: resultFileStoragePath,
 		DBString:        resultDBString,
+		FlagAuditFile:   resultAuditFile,
+		FlagAuditURL:    resultAuditURL,
 	}
 }
