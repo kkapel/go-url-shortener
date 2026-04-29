@@ -16,10 +16,10 @@ import (
 )
 
 type AuditFormat struct {
-	ts      int64
-	action  string
-	user_id int
-	url     string
+	Ts      int64  `json:"ts"`
+	Action  string `json:"action"`
+	User_id int    `json:"user_id"`
+	Url     string `json:"url"`
 }
 
 type AuditMu struct {
@@ -81,14 +81,14 @@ func Audit(auditChan chan<- AuditFormat) func(http.Handler) http.Handler {
 			if lw.responseData.status >= 200 && lw.responseData.status < 300 {
 				// Пишем в канал структуру для отправки в аудит
 				auditFormatToChan := AuditFormat{
-					ts: time.Now().Unix(),
-					action: func() string {
+					Ts: time.Now().Unix(),
+					Action: func() string {
 						if r.Method == http.MethodPost {
 							return "shorten"
 						}
 						return "follow"
 					}(),
-					user_id: func() int {
+					User_id: func() int {
 						cookie, err := r.Cookie("access_token")
 						if err != nil {
 							if err == http.ErrNoCookie {
@@ -106,15 +106,15 @@ func Audit(auditChan chan<- AuditFormat) func(http.Handler) http.Handler {
 
 						return id
 					}(),
-					url: func() string {
+					Url: func() string {
 						// Получаем оригинальный Url
 						// Его местонахождение зависит от метода
 						// POST / - url в теле запроса
 						var longURL string
-						if r.Method == http.MethodPost && r.RequestURI == "/" {
+						if r.Method == http.MethodPost && r.URL.Path == "/" {
 							longURL = string(body)
 							return longURL
-						} else if r.Method == http.MethodPost && r.RequestURI == "/api/shorten" {
+						} else if r.Method == http.MethodPost && r.URL.Path == "/api/shorten" {
 							var url handler.URL
 
 							if err := json.Unmarshal(body, &url); err != nil {
@@ -163,17 +163,32 @@ func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *AuditMu, au
 	}
 
 	for audit := range auditChan {
-		if filePath != "" && file != nil {
-			auditJSON, err := json.Marshal(audit)
+		auditJSON, err := json.Marshal(audit)
 
+		if err != nil {
+			loger.Log.Error("audit.go", zap.String("Function processAudit", err.Error()))
+			continue
+		}
+		if filePath != "" && file != nil {
+
+			var auditJSONFile []byte
+			mu.mu.Lock()
+			auditJSONFile = append(auditJSON, '\n')
+			_, err = file.Write(auditJSONFile)
+			mu.mu.Unlock()
+		}
+		// еще делаем отправку на сервер
+		if auditURL != "" {
+			resp, err := http.Post(auditURL, "application/json", bytes.NewBuffer(auditJSON))
 			if err != nil {
 				loger.Log.Error("audit.go", zap.String("Function processAudit", err.Error()))
 				continue
 			}
-			mu.mu.Lock()
-			auditJSON = append(auditJSON, '\n')
-			_, err = file.Write(auditJSON)
-			mu.mu.Unlock()
+			resp.Body.Close()
+
+			if resp.StatusCode > 200 {
+				loger.Log.Error("audit.go", zap.String("Function processAudit", http.StatusText(resp.StatusCode)))
+			}
 		}
 
 	}
