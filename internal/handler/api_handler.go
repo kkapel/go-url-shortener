@@ -85,6 +85,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// APIPageGet выполняет Get запрос.
 func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
