@@ -2,17 +2,19 @@ package service
 
 import (
 	"math/rand/v2"
+	"strings"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+// Генерация URL
 func GenerateRandomString(n int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, 7) // Создаем срез из 7 пустых байт
+	var sb strings.Builder
+	sb.Grow(n) // Выделяем память n-байт в билдере
 
-	for i := range b {
-		b[i] = charset[rand.IntN(len(charset))]
+	for i := 0; i < n; i++ {
+		sb.WriteByte(charset[rand.IntN(len(charset))])
 	}
 
-	return string(b)
+	return sb.String()
 }
