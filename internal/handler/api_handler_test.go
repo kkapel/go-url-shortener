@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
@@ -255,5 +256,38 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 			//
 		})
 	}
+
+}
+
+func ExampleHandler_APIPagePost() {
+
+	cfg := &config.Config{
+		Host:            "localhost",
+		GetURLHost:      "http://localhost:8080",
+		FileStoragePath: filepath.Join(".", "storage.txt"),
+		DBString:        "",
+	}
+	fileRepo := repository.CreateRepository()
+	urlLocal := repository.NewURLRepository()
+	databaseInstance, err := repository.InitDB(cfg.DBString)
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+	}
+	srv := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg)
+	// Создаем хэндлер
+	h := &Handler{
+		Cfg:     cfg,
+		Service: srv,
+	}
+
+	resp := httptest.NewRecorder()
+	requestPost := httptest.NewRequest(http.MethodPost, cfg.GetURLHost, strings.NewReader("https://practicum.yandex/"))
+
+	// Делаем запрос
+	h.APIPagePost(resp, requestPost)
+
+	// Выводим результат
+	fmt.Printf("Status: %d\n", resp.Code)
+	fmt.Printf("Content: %s\n", resp.Header().Get("Content-Type"))
 
 }
