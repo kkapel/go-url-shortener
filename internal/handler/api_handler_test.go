@@ -290,4 +290,8 @@ func ExampleHandler_APIPagePost() {
 	fmt.Printf("Status: %d\n", resp.Code)
 	fmt.Printf("Content: %s\n", resp.Header().Get("Content-Type"))
 
+	// Output:
+	// Status: 201
+	// Content: text/plain
+
 }
