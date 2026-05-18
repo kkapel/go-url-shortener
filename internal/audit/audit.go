@@ -188,7 +188,7 @@ func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *sync.Mutex,
 			}
 			resp.Body.Close()
 
-			if resp.StatusCode >= 300 {
+			if resp.StatusCode >= 400 {
 				loger.Log.Error("audit.go", zap.String("Function processAudit", http.StatusText(resp.StatusCode)))
 			}
 		}
