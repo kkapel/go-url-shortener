@@ -22,10 +22,6 @@ type AuditFormat struct {
 	Url    string `json:"url"`
 }
 
-type AuditMu struct {
-	mu *sync.RWMutex
-}
-
 type (
 	// берём структуру для хранения сведений об ответе
 	responseData struct {
@@ -146,7 +142,7 @@ func Audit(auditChan chan<- AuditFormat) func(http.Handler) http.Handler {
 // Функция обработки
 // Отправка в файл
 // И отправка сообщения на сервер
-func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *AuditMu, auditURL string) {
+func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *sync.Mutex, auditURL string) {
 	var file *os.File
 	var err error
 
@@ -170,12 +166,18 @@ func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *AuditMu, au
 			continue
 		}
 		if filePath != "" && file != nil {
-
-			var auditJSONFile []byte
-			mu.mu.Lock()
-			auditJSONFile = append(auditJSON, '\n')
-			_, err = file.Write(auditJSONFile)
-			mu.mu.Unlock()
+			err := func() error {
+				var auditJSONFile []byte
+				mu.Lock()
+				defer mu.Unlock()
+				auditJSONFile = append(auditJSON, '\n')
+				_, err = file.Write(auditJSONFile)
+				return err
+			}()
+			if err != nil {
+				loger.Log.Error("audit.go", zap.String("Function processAudit", err.Error()))
+				continue
+			}
 		}
 		// еще делаем отправку на сервер
 		if auditURL != "" {
@@ -186,16 +188,10 @@ func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *AuditMu, au
 			}
 			resp.Body.Close()
 
-			if resp.StatusCode > 200 {
+			if resp.StatusCode >= 300 {
 				loger.Log.Error("audit.go", zap.String("Function processAudit", http.StatusText(resp.StatusCode)))
 			}
 		}
 
-	}
-}
-
-func CreateMU() *AuditMu {
-	return &AuditMu{
-		mu: new(sync.RWMutex),
 	}
 }

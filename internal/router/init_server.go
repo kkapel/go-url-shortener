@@ -10,6 +10,7 @@ import (
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -65,7 +66,8 @@ func Run() error {
 
 	// Создаем отдельный канал для аудита и запускаем go-рутину
 	auditChan := make(chan audit.AuditFormat, 10)
-	auditMU := audit.CreateMU()
+	auditMU := new(sync.Mutex)
+
 	r.Group(func(r chi.Router) {
 		r.Use(audit.Audit(auditChan))
 		r.Post("/", h.APIPagePost)
