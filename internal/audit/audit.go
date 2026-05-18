@@ -16,10 +16,10 @@ import (
 )
 
 type AuditFormat struct {
-	Ts      int64  `json:"ts"`
-	Action  string `json:"action"`
-	User_id int    `json:"user_id"`
-	Url     string `json:"url"`
+	Ts     int64  `json:"ts"`
+	Action string `json:"action"`
+	UserID int    `json:"user_id"`
+	Url    string `json:"url"`
 }
 
 type AuditMu struct {
@@ -88,7 +88,7 @@ func Audit(auditChan chan<- AuditFormat) func(http.Handler) http.Handler {
 						}
 						return "follow"
 					}(),
-					User_id: func() int {
+					UserID: func() int {
 						cookie, err := r.Cookie("access_token")
 						if err != nil {
 							if err == http.ErrNoCookie {
