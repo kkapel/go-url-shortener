@@ -1,6 +1,7 @@
 package router
 
 import (
+	"go-url-shortener/internal/audit"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/encoding"
@@ -9,6 +10,7 @@ import (
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -56,13 +58,24 @@ func Run() error {
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
 	r.Use(cookie.RequestCookies)
-	r.Post("/", h.APIPagePost)
-	r.Post("/api/shorten", h.APIPagePostJSON)
+
 	r.Post("/api/shorten/batch", h.APIPagePostBatch)
-	r.Get("/{id}", h.APIPageGet)
 	r.Get("/ping", h.APIGetPing)
 	r.Get("/api/user/urls", h.APIPageGetUserURLs)
 	r.Delete("/api/user/urls", h.APIDeleteURLs)
+
+	// Создаем отдельный канал для аудита и запускаем go-рутину
+	auditChan := make(chan audit.AuditFormat, 10)
+	auditMU := new(sync.Mutex)
+
+	r.Group(func(r chi.Router) {
+		r.Use(audit.Audit(auditChan))
+		r.Post("/", h.APIPagePost)
+		r.Post("/api/shorten", h.APIPagePostJSON)
+		r.Get("/{id}", h.APIPageGet)
+	})
+
+	go audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
 
 	return srv.ListenAndServe()
 }

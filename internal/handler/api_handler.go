@@ -42,6 +42,7 @@ type ShortURLByUserResponse struct {
 	OriginalURL string `json:"original_url"`
 }
 
+// APIPagePost - Post запрос на формирование сокращенного URL
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
@@ -85,6 +86,7 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// APIPageGet выполняет Get запрос.
 func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
@@ -128,6 +130,8 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// APIPagePost - Post запрос на формирование сокращенного URL
+// В теле запроса формат JSON
 func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
@@ -184,6 +188,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// APIGetPing - Get-запрос на доступность сервера
 func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 
 	switch req.Method {
@@ -202,6 +207,9 @@ func (h *Handler) APIGetPing(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// APIPagePost - Post запрос на формирование сокращенного URL
+// В теле запроса формат JSON
+// Поддерживает батч-данные
 func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 	loger.Log.Info("APIPagePostBatch starts")
 
@@ -337,6 +345,7 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 
 }
 
+// APIDeleteURLs - функция удаления коротких URL
 func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodDelete:
