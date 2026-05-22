@@ -50,7 +50,7 @@ func InitDB(dbConnect string) (*DB, error) {
 
 	databaseInstance := &DB{db: db}
 
-	if err := databaseInstance.CheckConnect(); err != nil {
+	if err = databaseInstance.CheckConnect(); err != nil {
 		return nil, err
 	}
 
@@ -218,7 +218,7 @@ func (db *DB) GetURLsByUserID(ctx context.Context, userID int) (map[string]strin
 
 	for rows.Next() {
 		var shortURL, longURL string
-		if err := rows.Scan(&shortURL, &longURL); err != nil {
+		if err = rows.Scan(&shortURL, &longURL); err != nil {
 			return nil, err
 		}
 		result[shortURL] = longURL

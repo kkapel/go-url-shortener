@@ -147,7 +147,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 
 		loger.Log.Info("APIPagePostJSON", zap.Any("Request Body", body))
 
-		if err := json.Unmarshal(body, &url); err != nil {
+		if err = json.Unmarshal(body, &url); err != nil {
 			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -225,7 +225,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		}
 		defer req.Body.Close()
 
-		if err := json.Unmarshal(body, &batchJSON); err != nil {
+		if err = json.Unmarshal(body, &batchJSON); err != nil {
 			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostBatch", err.Error()))
 
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -236,8 +236,9 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 
 		//Получаем короткий URL
 		//Проходим по циклу оригинальных(длинных) URL
+		var shortURL string
 		for i := range batchJSON {
-			shortURL, err := h.Service.GetURL(req.Context(), batchJSON[i].OriginalURL, "short", "Post")
+			shortURL, err = h.Service.GetURL(req.Context(), batchJSON[i].OriginalURL, "short", "Post")
 
 			if err != nil {
 				loger.Log.Error("Ошибка в методе GetURL", zap.String("error", err.Error()))

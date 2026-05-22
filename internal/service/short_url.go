@@ -75,7 +75,7 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 		var userID int
 
 		//получаем userID
-		userID, err := cookies.GetUserValue(ctx)
+		userID, err = cookies.GetUserValue(ctx)
 
 		if err == cookies.ErrUserIDNotFound {
 			userID = 0
@@ -89,8 +89,14 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 
 		if s.dbRepo != nil {
 			err = s.dbRepo.InsertIntoDB(ctx, URL, inputURL, userID)
+			if err != nil {
+				return "", err
+			}
 		} else if s.fileRepo != nil {
 			err = s.fileRepo.WriteToFile(fileStorage, URL, inputURL, s.cfg.FileStoragePath)
+			if err != nil {
+				return "", err
+			}
 		} else {
 			s.localRepo.WriteLocalURL(inputURL, URL)
 		}
