@@ -22,7 +22,7 @@ const TokenExp = time.Hour * 3
 
 type userIDType string
 
-const userIDKey userIDType = "userID"
+const UserIDKey userIDType = "userID"
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -106,7 +106,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), userIDKey, userID)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		h.ServeHTTP(w, r.WithContext(ctx))
 
 	})

@@ -94,7 +94,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 		loger.Log.Info("APIPageGet", zap.Any("Request Body", req.Body))
 
-		shortURL := req.PathValue("id")
+		shortURL := req.PathValue(string(cookies.UserIDKey))
 
 		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(context.Background(), shortURL)
 
