@@ -137,7 +137,7 @@ func (s *ShortenerService) InsertUserID(ctx context.Context, userID int, newToke
 
 // generator функция для массива строк
 func generatorString(input []string) chan string {
-	inputCh := make(chan string)
+	inputCh := make(chan string, len(input))
 
 	go func() {
 		defer close(inputCh)
