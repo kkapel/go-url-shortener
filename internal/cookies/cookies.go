@@ -126,7 +126,7 @@ func (cookieStruct *Cookie) generateToken(ctx context.Context) (string, int, err
 			// когда создан токен
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
-		UserID: userID + 1,
+		UserID: userID,
 	})
 
 	tokenString, err := token.SignedString([]byte(SecretKey))
@@ -134,7 +134,7 @@ func (cookieStruct *Cookie) generateToken(ctx context.Context) (string, int, err
 		return "", 0, err
 	}
 
-	return tokenString, userID + 1, nil
+	return tokenString, userID, nil
 
 }
 
