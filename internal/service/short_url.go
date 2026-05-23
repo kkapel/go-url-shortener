@@ -202,9 +202,24 @@ func fanOut(inputCh chan string) []chan string {
 	channels := make([]chan string, numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
-		// отправляем в слайс каналов
-		channels[i] = inputCh
+		channels[i] = make(chan string) // Создаем НОВЫЙ канал для каждого воркера
 	}
+
+	go func() {
+		// Очень важно закрыть ВСЕ выходящие каналы, когда входящий иссякнет
+		defer func() {
+			for _, ch := range channels {
+				close(ch)
+			}
+		}()
+
+		// Распределяем данные по кругу (Round Robin)
+		i := 0
+		for data := range inputCh {
+			channels[i] <- data
+			i = (i + 1) % numWorkers
+		}
+	}()
 
 	// возвращаем слайс каналов
 	return channels
