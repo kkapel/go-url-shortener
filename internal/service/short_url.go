@@ -233,6 +233,6 @@ func (s *ShortenerService) DeleteURLs(id int, data []string) {
 	inputCh := generatorString(data)
 	fanoutCh := fanOut(inputCh)
 	finalCh := s.fanIn(ctx, id, fanoutCh...)
-	s.batchWorkerDelete(ctx, finalCh, id)
+	go s.batchWorkerDelete(ctx, finalCh, id)
 
 }
