@@ -58,7 +58,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			}
 			// другая ошибка
 			// тоже выдаем куку
-		} else {
+		} else if err == nil {
 
 			// Проверяем подлинность куки
 			userID, err = GetUserID(cookie.Value)
@@ -80,10 +80,12 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 				}
 			}
 
-			if err != nil {
-				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
+			if err != nil && newToken == "" {
+				newToken, userID, err = cookieStruct.generateToken(r.Context())
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 
 		}
