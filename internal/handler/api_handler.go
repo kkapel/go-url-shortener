@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"go-url-shortener/internal/config"
@@ -95,7 +96,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 		shortURL := req.PathValue("id")
 
-		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(req.Context(), shortURL)
+		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(context.Background(), shortURL)
 
 		if err != nil {
 			loger.Log.Error("api_handler.go", zap.String("Function APIPageGet", err.Error()))
@@ -390,7 +391,7 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// Взаимодействуем с сервисом и БД в отдельной go-рутине
-		h.Service.DeleteURLs(id, arrayURLs)
+		go h.Service.DeleteURLs(id, arrayURLs)
 
 		res.WriteHeader(http.StatusAccepted)
 
