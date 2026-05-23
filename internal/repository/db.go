@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"go-url-shortener/internal/loger"
 	"time"
@@ -259,7 +258,7 @@ func (db *DB) SetDeletedFlag(ctx context.Context, ids []string, id int) error {
 
 func (db *DB) CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool, error) {
 	if db == nil {
-		return false, errors.New("db is nil")
+		return false, nil
 	}
 
 	var exists bool
