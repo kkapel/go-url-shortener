@@ -155,7 +155,7 @@ func GetUserID(tokenString string) (int, error) {
 	}
 
 	//Если userID не заполнен, будет по умолчанию значение 0
-	if claims.UserID < 1 {
+	if claims.UserID < 0 {
 		return 0, ErrUserIDNotFound
 	}
 
