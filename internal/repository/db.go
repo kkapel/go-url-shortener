@@ -189,7 +189,11 @@ func (db *DB) InsertUserID(ctx context.Context, id int, accessToken string) erro
 		return nil
 	}
 
-	sqlStr := "insert into users_token (id, accessToken) values ($1, $2)"
+	sqlStr := `
+    INSERT INTO users_token (id, accessToken) 
+    VALUES ($1, $2) 
+    ON CONFLICT (id) DO UPDATE SET accessToken = EXCLUDED.accessToken
+`
 	_, err := db.db.ExecContext(ctx, sqlStr, id, accessToken)
 
 	if err != nil {
