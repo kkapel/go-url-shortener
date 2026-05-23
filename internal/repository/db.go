@@ -159,12 +159,12 @@ func (db *DB) InsertIntoDB(ctx context.Context, shortURL string, longURL string,
 	return nil
 }
 
-func (db *DB) GetLastUserID(ctx context.Context) (int, error) {
+func (db *DB) GetNextUserID(ctx context.Context) (int, error) {
 
 	if db == nil {
 		return 0, nil
 	}
-	sqlStr := "select coalesce(max(id), 0) from users_token"
+	sqlStr := "SELECT nextval('users_token_id_seq')"
 
 	row := db.db.QueryRowContext(ctx, sqlStr)
 

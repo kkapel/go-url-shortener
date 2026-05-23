@@ -30,7 +30,7 @@ type Claims struct {
 }
 
 type UserProvider interface {
-	GetLastUserID(ctx context.Context) (int, error)
+	GetNextUserID(ctx context.Context) (int, error)
 	InsertUserID(ctx context.Context, id int, token string) error
 }
 
@@ -122,7 +122,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 func (cookieStruct *Cookie) generateToken(ctx context.Context) (string, int, error) {
 	// Создаем jwt-строку
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-	userID, err := cookieStruct.provider.GetLastUserID(ctx)
+	userID, err := cookieStruct.provider.GetNextUserID(ctx)
 
 	if err != nil {
 		return "", 0, err

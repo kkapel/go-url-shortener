@@ -127,8 +127,8 @@ func (s *ShortenerService) SetDeletedFlag(ctx context.Context, ids []string, id 
 	return s.dbRepo.SetDeletedFlag(ctx, ids, id)
 }
 
-func (s *ShortenerService) GetLastUserID(ctx context.Context) (int, error) {
-	return s.dbRepo.GetLastUserID(ctx)
+func (s *ShortenerService) GetNextUserID(ctx context.Context) (int, error) {
+	return s.dbRepo.GetNextUserID(ctx)
 }
 
 func (s *ShortenerService) InsertUserID(ctx context.Context, userID int, newToken string) error {
