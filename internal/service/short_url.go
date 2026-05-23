@@ -7,8 +7,8 @@ import (
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
-	"log"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -151,24 +151,44 @@ func generatorString(input []string) chan string {
 }
 
 func (s *ShortenerService) batchWorkerDelete(ctx context.Context, inputCh <-chan string, userID int) {
+	ticker := time.NewTicker(300 * time.Millisecond)
+	defer ticker.Stop() // Важно остановить таймер при выходе
+
 	var ids []string
 
-	for id := range inputCh {
-		ids = append(ids, id)
-
-		if len(ids) >= 100 { //Устанавливаем лимит для батча - 100
-			err := s.dbRepo.SetDeletedFlag(ctx, ids, userID)
-			if err != nil {
-				log.Printf("ошибка батч-удаления: %v", err)
+	for {
+		select {
+		case id, ok := <-inputCh:
+			if !ok {
+				// Если канал закрыт, удаляем то, что успели собрать
+				if len(ids) > 0 {
+					if err := s.dbRepo.SetDeletedFlag(ctx, ids, userID); err != nil {
+						loger.Log.Error("final batch delete error", zap.Error(err), zap.Int("user_id", userID))
+					}
+				}
+				return
 			}
-			ids = ids[:0]
-		}
-	}
 
-	if len(ids) > 0 {
-		err := s.SetDeletedFlag(ctx, ids, userID)
-		if err != nil {
-			log.Printf("ошибка батч-удаления: %v", err)
+			ids = append(ids, id)
+			if len(ids) >= 100 {
+				if err := s.dbRepo.SetDeletedFlag(ctx, ids, userID); err != nil {
+					loger.Log.Error("batch delete error (limit reached)", zap.Error(err), zap.Int("user_id", userID))
+				}
+				ids = ids[:0]
+			}
+
+		case <-ticker.C:
+			if len(ids) > 0 {
+				if err := s.dbRepo.SetDeletedFlag(ctx, ids, userID); err != nil {
+					loger.Log.Error("batch delete error (ticker)", zap.Error(err), zap.Int("user_id", userID))
+				}
+				ids = ids[:0]
+			}
+
+		case <-ctx.Done():
+			// Если контекст отменили
+			loger.Log.Info("worker stopped by context")
+			return
 		}
 	}
 
