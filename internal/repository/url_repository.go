@@ -48,7 +48,7 @@ func (r *Repsitory) GetURLFromFile(inputURL string, filePath string, URLType str
 		return "", nil, err
 	}
 
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	decoder := json.NewDecoder(file)
 	errDecode := decoder.Decode(&URLFileStorages)
@@ -110,7 +110,7 @@ func (r *Repsitory) WriteToFile(URLFileStorages []URLFileStorage, shortURL strin
 		return err
 	}
 
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	//Получим новый UUID
 	var UUIDNew uint
@@ -129,8 +129,14 @@ func (r *Repsitory) WriteToFile(URLFileStorages []URLFileStorage, shortURL strin
 	URLFileStorages = append(URLFileStorages, newItem)
 
 	// очистим файл и переведем курсор
-	file.Truncate(0)
-	file.Seek(0, 0)
+	err = file.Truncate(0)
+	if err != nil {
+		return err
+	}
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
 
 	encoder := json.NewEncoder(file)
 

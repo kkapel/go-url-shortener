@@ -166,7 +166,7 @@ func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *sync.Mutex,
 			continue
 		}
 		if filePath != "" && file != nil {
-			err := func() error {
+			err = func() error {
 				var auditJSONFile []byte
 				mu.Lock()
 				defer mu.Unlock()

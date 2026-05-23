@@ -83,7 +83,10 @@ func (db *DB) CheckConnect() error {
 }
 
 func (db *DB) Close() error {
-	db.db.Close()
+	err := db.db.Close()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -212,7 +215,7 @@ func (db *DB) GetURLsByUserID(ctx context.Context, userID int) (map[string]strin
 		}
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[string]string)
 

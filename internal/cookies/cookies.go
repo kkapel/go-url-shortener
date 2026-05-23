@@ -68,7 +68,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 		} else {
 
 			// Проверяем подлинность куки
-			_, err := GetUserID(cookie.Value)
+			_, err = GetUserID(cookie.Value)
 
 			// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
 			if err == ErrUserIDNotFound {
@@ -104,7 +104,13 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			}
 			http.SetCookie(w, cookie)
 
-			cookieStruct.provider.InsertUserID(r.Context(), userID, newToken)
+			err = cookieStruct.provider.InsertUserID(r.Context(), userID, newToken)
+
+			if err != nil {
+				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		}
 
 		ctx := context.WithValue(r.Context(), userIDKey, userID)
