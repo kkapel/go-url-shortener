@@ -246,11 +246,17 @@ func (db *DB) SetDeletedFlag(ctx context.Context, ids []string, id int) error {
 
 	sqlStr := "update short_url set deleted_flag = true where user_id = $1 and short_link = ANY($2)"
 
-	_, err := db.db.ExecContext(ctx, sqlStr, id, pq.Array(ids))
+	res, err := db.db.ExecContext(ctx, sqlStr, id, pq.Array(ids))
 
 	if err != nil {
 		return err
 	}
+
+	count, _ := res.RowsAffected()
+	loger.Log.Info("Батч удаление",
+		zap.Int("userID", id),
+		zap.Int64("rowsAffected", count),
+		zap.Strings("ids", ids))
 
 	return nil
 
