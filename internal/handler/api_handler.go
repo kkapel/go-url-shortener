@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
@@ -95,7 +94,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 		loger.Log.Info("APIPageGet", zap.Any("Request Body", req.Body))
 
-		shortURL := chi.URLParam(req, "id")
+		shortURL := req.PathValue("id")
 
 		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(context.Background(), shortURL)
 
