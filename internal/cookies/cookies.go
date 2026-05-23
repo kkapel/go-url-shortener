@@ -80,6 +80,12 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 				}
 			}
 
+			if err != nil {
+				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
 		}
 
 		// если заполнен newToken, то выдаем его пользователю в ответе
