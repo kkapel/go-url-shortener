@@ -164,7 +164,7 @@ func GetUserID(tokenString string) (int, error) {
 }
 
 func GetUserValue(ctx context.Context) (int, error) {
-	val := ctx.Value(userIDKey)
+	val := ctx.Value(UserIDKey)
 	if val == nil {
 		return 0, nil
 	}
