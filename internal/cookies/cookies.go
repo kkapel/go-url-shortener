@@ -58,17 +58,10 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			}
 			// другая ошибка
 			// тоже выдаем куку
-		} else if err != http.ErrNoCookie {
-			newToken, userID, err = cookieStruct.generateToken(r.Context())
-			if err != nil {
-				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
 		} else {
 
 			// Проверяем подлинность куки
-			_, err = GetUserID(cookie.Value)
+			userID, err = GetUserID(cookie.Value)
 
 			// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
 			if err == ErrUserIDNotFound {
