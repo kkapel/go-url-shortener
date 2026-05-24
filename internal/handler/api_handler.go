@@ -64,7 +64,12 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 
 			if errors.Is(err, service.ErrConflict) {
 				res.WriteHeader(http.StatusConflict)
-				res.Write([]byte(url))
+				_, err = res.Write([]byte(url))
+				if err != nil {
+					loger.Log.Error("api_handler.go", zap.String("errorJoinPath", err.Error()))
+					http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				return
 			}
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -80,7 +85,12 @@ func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 
 		res.Header().Set("content-type", "text/plain")
 		res.WriteHeader(http.StatusCreated)
-		res.Write([]byte(url))
+		_, err = res.Write([]byte(url))
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("errorJoinPath", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -144,7 +154,7 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
-		defer req.Body.Close()
+		defer func() { err = req.Body.Close() }()
 
 		loger.Log.Info("APIPagePostJSON", zap.Any("Request Body", body))
 
@@ -182,7 +192,12 @@ func (h *Handler) APIPagePostJSON(res http.ResponseWriter, req *http.Request) {
 			res.WriteHeader(http.StatusCreated)
 		}
 		loger.Log.Info("APIPagePostJSON", zap.String("result", string(resp)))
-		res.Write(resp)
+		_, err = res.Write(resp)
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostJSON", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		errorResponse(res)
