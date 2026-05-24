@@ -230,7 +230,7 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 		DBString:        "postgres://postgres:admin@localhost:5432/postgres?sslmode=disable",
 	}
 
-	defer loger.Log.Sync()
+	defer func() { _ = loger.Log.Sync() }()
 
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
@@ -248,7 +248,7 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 			h.APIPagePostBatch(postRecorder, requestPost)
 
 			result := postRecorder.Result()
-			defer result.Body.Close()
+			defer func() { _ = result.Body.Close() }()
 
 			assert.Equal(t, test.wantpost.code, result.StatusCode)
 			assert.Equal(t, test.wantpost.contentType, result.Header.Get("Content-Type"))
