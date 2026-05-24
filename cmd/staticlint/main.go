@@ -16,6 +16,7 @@ package main
 
 import (
 	"go/ast"
+	"os"
 	"strings"
 
 	"github.com/kisielk/errcheck/errcheck"
@@ -37,6 +38,12 @@ func main() {
 	// Анализаторы SA из пакета staticcheck
 	for _, v := range staticcheck.Analyzers {
 		if strings.HasPrefix(v.Analyzer.Name, "SA") {
+
+			// исключаем анализатор os.Exit
+			if v.Analyzer.Name == "SA3000" {
+				continue
+			}
+
 			mychecks = append(mychecks, v.Analyzer)
 		}
 	}
@@ -76,29 +83,57 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	for _, file := range pass.Files {
-		// Проверяем только файлы с функцией main
+		filename := pass.Fset.Position(file.Pos()).Filename
+
+		if !strings.HasSuffix(filename, ".go") {
+			continue
+		}
+
+		if strings.Contains(filename, "go-build") {
+			continue
+		}
+
+		if _, err := os.Stat(filename); err != nil {
+			continue
+		}
+
 		ast.Inspect(file, func(n ast.Node) bool {
-			// Ищем объявление функции
 			fn, ok := n.(*ast.FuncDecl)
 			if !ok || fn.Name.Name != "main" {
 				return true
 			}
 
-			// Внутри функции main ищем вызов os.Exit
 			ast.Inspect(fn.Body, func(node ast.Node) bool {
 				call, ok := node.(*ast.CallExpr)
 				if !ok {
 					return true
 				}
-				if selector, ok := call.Fun.(*ast.SelectorExpr); ok {
-					if pkg, ok := selector.X.(*ast.Ident); ok && pkg.Name == "os" && selector.Sel.Name == "Exit" {
-						pass.Reportf(selector.Pos(), "direct call to os.Exit in main function is prohibited")
-					}
+
+				sel, ok := call.Fun.(*ast.SelectorExpr)
+				if !ok {
+					return true
 				}
+
+				pkg, ok := sel.X.(*ast.Ident)
+				if !ok {
+					return true
+				}
+
+				if pkg.Name == "os" &&
+					sel.Sel.Name == "Exit" {
+
+					pass.Reportf(
+						sel.Pos(),
+						"direct call to os.Exit in main function is prohibited",
+					)
+				}
+
 				return true
 			})
+
 			return true
 		})
 	}
+
 	return nil, nil
 }
