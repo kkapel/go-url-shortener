@@ -239,7 +239,7 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
-		defer req.Body.Close()
+		defer func() { err = req.Body.Close() }()
 
 		if err = json.Unmarshal(body, &batchJSON); err != nil {
 			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostBatch", err.Error()))
@@ -284,7 +284,12 @@ func (h *Handler) APIPagePostBatch(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("content-type", "application/json")
 		res.WriteHeader(http.StatusCreated)
 		loger.Log.Info("APIPagePostBatch", zap.String("result", string(resp)))
-		res.Write(resp)
+		_, err = res.Write(resp)
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPagePostBatch", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		errorResponse(res)
@@ -354,7 +359,12 @@ func (h *Handler) APIPageGetUserURLs(res http.ResponseWriter, req *http.Request)
 		res.Header().Set("content-type", "application/json")
 		res.WriteHeader(http.StatusOK)
 		loger.Log.Info("APIPageGetUserURLs", zap.String("result", string(resp)))
-		res.Write(resp)
+		_, err = res.Write(resp)
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIPageGetUserURLs", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		errorResponse(res)
@@ -372,7 +382,7 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
-		defer req.Body.Close()
+		defer func() { err = req.Body.Close() }()
 
 		// Получаем из куки UserID
 		// Можно потом вынести в отдельный метод

@@ -153,7 +153,7 @@ func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *sync.Mutex,
 		if err != nil {
 			loger.Log.Error("audit.go", zap.String("Function processAudit", err.Error()))
 		} else {
-			defer file.Close()
+			defer func() { err = file.Close() }()
 		}
 
 	}
@@ -186,7 +186,11 @@ func ProcessAudit(auditChan <-chan AuditFormat, filePath string, mu *sync.Mutex,
 				loger.Log.Error("audit.go", zap.String("Function processAudit", err.Error()))
 				continue
 			}
-			resp.Body.Close()
+			err = resp.Body.Close()
+			if err != nil {
+				loger.Log.Error("audit.go", zap.String("Function processAudit", err.Error()))
+				continue
+			}
 
 			if resp.StatusCode >= 400 {
 				loger.Log.Error("audit.go", zap.String("Function processAudit", http.StatusText(resp.StatusCode)))
