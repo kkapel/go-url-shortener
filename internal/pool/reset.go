@@ -1,4 +1,4 @@
-package reset
+package pool
 
 import "sync"
 

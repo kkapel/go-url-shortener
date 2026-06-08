@@ -1,13 +1,13 @@
 package testmodel
 
 import (
-	"go-url-shortener/cmd/reset"
+	"go-url-shortener/internal/pool"
 	"testing"
 )
 
 func TestPoolReset(t *testing.T) {
 	// Создаем пул для типа User1
-	p := reset.New(func() *User1 {
+	p := pool.New(func() *User1 {
 		return &User1{}
 	})
 

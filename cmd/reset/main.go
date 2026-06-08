@@ -1,4 +1,4 @@
-package reset
+package main
 
 import (
 	"bytes"
