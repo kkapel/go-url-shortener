@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,6 +40,12 @@ var primitiveZero = map[string]string{
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	root := "."
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -61,8 +68,9 @@ func main() {
 	})
 
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func processPackage(dir string) error {
