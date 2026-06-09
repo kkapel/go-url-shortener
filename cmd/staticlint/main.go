@@ -114,20 +114,25 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					return true
 				}
 
-				pkg, ok := sel.X.(*ast.Ident)
+				_, ok = sel.X.(*ast.Ident)
 				if !ok {
 					return true
 				}
 
-				if pkg.Name == "os" &&
-					sel.Sel.Name == "Exit" {
-
+				obj := pass.TypesInfo.Uses[sel.Sel]
+				if obj != nil && obj.Pkg() != nil && obj.Pkg().Path() == "os" && obj.Name() == "Exit" {
 					pass.Reportf(
 						sel.Pos(),
 						"direct call to os.Exit in main function is prohibited",
 					)
 				}
 
+				if obj != nil && obj.Pkg() != nil && obj.Pkg().Path() == "log" && obj.Name() == "Fatal" {
+					pass.Reportf(
+						sel.Pos(),
+						"direct call to log.Fatal in main function is prohibited",
+					)
+				}
 				return true
 			})
 
