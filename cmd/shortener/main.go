@@ -6,10 +6,13 @@ import (
 	"log"
 )
 
+// Дефлотные значения, присваевыемые переменным уровня пакета при их объявлении, могут быть перезаписаны на этапе компиляции
+// с помощью флагов -ldflags
+
 var (
-	buildVersion string
-	buildDate    string
-	buildCommit  string
+	buildVersion string = "N/A" // Значение по умолчанию для версии сборки
+	buildDate    string = "N/A" // Значение по умолчанию для даты сборки
+	buildCommit  string = "N/A" // Значение по умолчанию для коммита сборки
 )
 
 func main() {

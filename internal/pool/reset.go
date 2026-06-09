@@ -11,6 +11,9 @@ type Pool[T Resetter] struct {
 }
 
 func New[T Resetter](factory func() T) *Pool[T] {
+	if factory == nil {
+		panic("factory function cannot be nil")
+	}
 	return &Pool[T]{
 		pool: sync.Pool{
 			New: func() any {
