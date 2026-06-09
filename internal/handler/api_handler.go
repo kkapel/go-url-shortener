@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"go-url-shortener/internal/config"
@@ -106,7 +105,7 @@ func (h *Handler) APIPageGet(res http.ResponseWriter, req *http.Request) {
 
 		shortURL := req.PathValue("id")
 
-		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(context.Background(), shortURL)
+		shortURLDeleted, err := h.Service.CheckFlagDeleteExists(req.Context(), shortURL)
 
 		if err != nil {
 			loger.Log.Error("api_handler.go", zap.String("Function APIPageGet", err.Error()))
