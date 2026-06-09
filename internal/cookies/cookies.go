@@ -20,9 +20,9 @@ var (
 const SecretKey = "testKey1" // убрать в бд
 const TokenExp = time.Hour * 3
 
-type UserIDType string
+type userIDType string
 
-const UserIDKey UserIDType = "userID"
+const userIDKey userIDType = "userID"
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -112,7 +112,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			}
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		ctx := context.WithValue(r.Context(), userIDKey, userID)
 		h.ServeHTTP(w, r.WithContext(ctx))
 
 	})
@@ -170,7 +170,7 @@ func GetUserID(tokenString string) (int, error) {
 }
 
 func GetUserValue(ctx context.Context) (int, error) {
-	val := ctx.Value(UserIDKey)
+	val := ctx.Value(userIDKey)
 	if val == nil {
 		return 0, nil
 	}
