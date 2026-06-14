@@ -20,7 +20,10 @@ func Run() error {
 	if err := loger.Initialize("INFO"); err != nil {
 		return err
 	}
-	defer loger.Log.Sync()
+	defer func() {
+		_ = loger.Log.Sync()
+	}()
+
 	loger.Log.Info("Init server start")
 	cfg := config.CreateConfig()
 	fileRepo := repository.CreateRepository()
@@ -35,7 +38,7 @@ func Run() error {
 
 	// Закрываем БД-соединение
 	if databaseInstance != nil {
-		defer databaseInstance.Close()
+		defer func() { _ = databaseInstance.Close() }()
 	}
 
 	loger.Log.Info("Init server running")

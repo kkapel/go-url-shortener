@@ -30,7 +30,7 @@ type Claims struct {
 }
 
 type UserProvider interface {
-	GetLastUserID(ctx context.Context) (int, error)
+	GetNextUserID(ctx context.Context) (int, error)
 	InsertUserID(ctx context.Context, id int, token string) error
 }
 
@@ -58,17 +58,10 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			}
 			// другая ошибка
 			// тоже выдаем куку
-		} else if err != http.ErrNoCookie {
-			newToken, userID, err = cookieStruct.generateToken(r.Context())
-			if err != nil {
-				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		} else {
+		} else if err == nil {
 
 			// Проверяем подлинность куки
-			_, err := GetUserID(cookie.Value)
+			userID, err = GetUserID(cookie.Value)
 
 			// Если кука присутствует в запросе, но не содержит ID пользователя, хендлер должен возвращать HTTP-статус 401
 			if err == ErrUserIDNotFound {
@@ -87,12 +80,18 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 				}
 			}
 
-			if err != nil {
-				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
+			if err != nil && newToken == "" {
+				newToken, userID, err = cookieStruct.generateToken(r.Context())
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 
+		} else if err != nil {
+			loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		// если заполнен newToken, то выдаем его пользователю в ответе
@@ -104,7 +103,13 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 			}
 			http.SetCookie(w, cookie)
 
-			cookieStruct.provider.InsertUserID(r.Context(), userID, newToken)
+			err = cookieStruct.provider.InsertUserID(r.Context(), userID, newToken)
+
+			if err != nil {
+				loger.Log.Error("cookies.go", zap.String("Function RequestCookies", err.Error()))
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		}
 
 		ctx := context.WithValue(r.Context(), userIDKey, userID)
@@ -116,7 +121,7 @@ func (cookieStruct *Cookie) RequestCookies(h http.Handler) http.Handler {
 func (cookieStruct *Cookie) generateToken(ctx context.Context) (string, int, error) {
 	// Создаем jwt-строку
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
-	userID, err := cookieStruct.provider.GetLastUserID(ctx)
+	userID, err := cookieStruct.provider.GetNextUserID(ctx)
 
 	if err != nil {
 		return "", 0, err
@@ -127,7 +132,7 @@ func (cookieStruct *Cookie) generateToken(ctx context.Context) (string, int, err
 			// когда создан токен
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
-		UserID: userID + 1,
+		UserID: userID,
 	})
 
 	tokenString, err := token.SignedString([]byte(SecretKey))
@@ -135,7 +140,7 @@ func (cookieStruct *Cookie) generateToken(ctx context.Context) (string, int, err
 		return "", 0, err
 	}
 
-	return tokenString, userID + 1, nil
+	return tokenString, userID, nil
 
 }
 
@@ -156,7 +161,7 @@ func GetUserID(tokenString string) (int, error) {
 	}
 
 	//Если userID не заполнен, будет по умолчанию значение 0
-	if claims.UserID < 1 {
+	if claims.UserID < 0 {
 		return 0, ErrUserIDNotFound
 	}
 

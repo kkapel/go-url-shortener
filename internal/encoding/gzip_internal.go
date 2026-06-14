@@ -90,7 +90,11 @@ func RequestEncoding(h http.Handler) http.Handler {
 			// меняем оригинальный http.ResponseWriter на новый
 			ow = cw
 			// не забываем отправить клиенту все сжатые данные после завершения middleware
-			defer cw.Close()
+			defer func() {
+				if err := cw.Close(); err != nil {
+					loger.Log.Error("gzip_internal.go", zap.String("Function  RequestEncoding", err.Error()))
+				}
+			}()
 		}
 
 		//если есть gzip
@@ -104,7 +108,11 @@ func RequestEncoding(h http.Handler) http.Handler {
 			}
 
 			r.Body = cr
-			defer cr.Close()
+			defer func() {
+				if err := cr.Close(); err != nil {
+					loger.Log.Error("gzip_internal.go", zap.String("Function  RequestEncoding", err.Error()))
+				}
+			}()
 		}
 
 		h.ServeHTTP(ow, r)

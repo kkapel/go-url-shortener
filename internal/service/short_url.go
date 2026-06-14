@@ -7,7 +7,6 @@ import (
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
-	"log"
 	"sync"
 
 	"go.uber.org/zap"
@@ -75,7 +74,7 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 		var userID int
 
 		//получаем userID
-		userID, err := cookies.GetUserValue(ctx)
+		userID, err = cookies.GetUserValue(ctx)
 
 		if err == cookies.ErrUserIDNotFound {
 			userID = 0
@@ -89,8 +88,14 @@ func (s *ShortenerService) GetURL(ctx context.Context, inputURL string, URLType 
 
 		if s.dbRepo != nil {
 			err = s.dbRepo.InsertIntoDB(ctx, URL, inputURL, userID)
+			if err != nil {
+				return "", err
+			}
 		} else if s.fileRepo != nil {
 			err = s.fileRepo.WriteToFile(fileStorage, URL, inputURL, s.cfg.FileStoragePath)
+			if err != nil {
+				return "", err
+			}
 		} else {
 			s.localRepo.WriteLocalURL(inputURL, URL)
 		}
@@ -121,8 +126,8 @@ func (s *ShortenerService) SetDeletedFlag(ctx context.Context, ids []string, id 
 	return s.dbRepo.SetDeletedFlag(ctx, ids, id)
 }
 
-func (s *ShortenerService) GetLastUserID(ctx context.Context) (int, error) {
-	return s.dbRepo.GetLastUserID(ctx)
+func (s *ShortenerService) GetNextUserID(ctx context.Context) (int, error) {
+	return s.dbRepo.GetNextUserID(ctx)
 }
 
 func (s *ShortenerService) InsertUserID(ctx context.Context, userID int, newToken string) error {
@@ -131,7 +136,7 @@ func (s *ShortenerService) InsertUserID(ctx context.Context, userID int, newToke
 
 // generator функция для массива строк
 func generatorString(input []string) chan string {
-	inputCh := make(chan string)
+	inputCh := make(chan string, len(input))
 
 	go func() {
 		defer close(inputCh)
@@ -144,28 +149,11 @@ func generatorString(input []string) chan string {
 	return inputCh
 }
 
-func (s *ShortenerService) batchWorkerDelete(ctx context.Context, inputCh <-chan string, userID int) {
-	var ids []string
-
-	for id := range inputCh {
-		ids = append(ids, id)
-
-		if len(ids) >= 100 { //Устанавливаем лимит для батча - 100
-			err := s.dbRepo.SetDeletedFlag(ctx, ids, userID)
-			if err != nil {
-				log.Printf("ошибка батч-удаления: %v", err)
-			}
-			ids = ids[:0]
-		}
+func (s *ShortenerService) batchWorkerDelete(ctx context.Context, data []string, userID int) {
+	err := s.dbRepo.SetDeletedFlag(ctx, data, userID)
+	if err != nil {
+		loger.Log.Error("final batch delete error", zap.Error(err), zap.Int("user_id", userID))
 	}
-
-	if len(ids) > 0 {
-		err := s.SetDeletedFlag(ctx, ids, userID)
-		if err != nil {
-			log.Printf("ошибка батч-удаления: %v", err)
-		}
-	}
-
 }
 
 // fanOut принимает канал данных, порождает 10 горутин
@@ -176,9 +164,24 @@ func fanOut(inputCh chan string) []chan string {
 	channels := make([]chan string, numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
-		// отправляем в слайс каналов
-		channels[i] = inputCh
+		channels[i] = make(chan string) // Создаем НОВЫЙ канал для каждого воркера
 	}
+
+	go func() {
+		// Очень важно закрыть ВСЕ выходящие каналы, когда входящий иссякнет
+		defer func() {
+			for _, ch := range channels {
+				close(ch)
+			}
+		}()
+
+		// Распределяем данные по кругу (Round Robin)
+		i := 0
+		for data := range inputCh {
+			channels[i] <- data
+			i = (i + 1) % numWorkers
+		}
+	}()
 
 	// возвращаем слайс каналов
 	return channels
@@ -224,9 +227,9 @@ func (s *ShortenerService) DeleteURLs(id int, data []string) {
 
 	ctx := context.Background()
 
-	inputCh := generatorString(data)
-	fanoutCh := fanOut(inputCh)
-	finalCh := s.fanIn(ctx, id, fanoutCh...)
-	s.batchWorkerDelete(ctx, finalCh, id)
+	//inputCh := generatorString(data)
+	//fanoutCh := fanOut(inputCh)
+	//finalCh := s.fanIn(ctx, id, fanoutCh...)
+	go s.batchWorkerDelete(ctx, data, id)
 
 }

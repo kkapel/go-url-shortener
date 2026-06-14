@@ -50,7 +50,7 @@ func InitDB(dbConnect string) (*DB, error) {
 
 	databaseInstance := &DB{db: db}
 
-	if err := databaseInstance.CheckConnect(); err != nil {
+	if err = databaseInstance.CheckConnect(); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +83,10 @@ func (db *DB) CheckConnect() error {
 }
 
 func (db *DB) Close() error {
-	db.db.Close()
+	err := db.db.Close()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -156,12 +159,12 @@ func (db *DB) InsertIntoDB(ctx context.Context, shortURL string, longURL string,
 	return nil
 }
 
-func (db *DB) GetLastUserID(ctx context.Context) (int, error) {
+func (db *DB) GetNextUserID(ctx context.Context) (int, error) {
 
 	if db == nil {
 		return 0, nil
 	}
-	sqlStr := "select coalesce(max(id), 0) from users_token"
+	sqlStr := "SELECT nextval('users_token_id_seq')"
 
 	row := db.db.QueryRowContext(ctx, sqlStr)
 
@@ -186,7 +189,11 @@ func (db *DB) InsertUserID(ctx context.Context, id int, accessToken string) erro
 		return nil
 	}
 
-	sqlStr := "insert into users_token (id, accessToken) values ($1, $2)"
+	sqlStr := `
+    INSERT INTO users_token (id, accessToken) 
+    VALUES ($1, $2) 
+    ON CONFLICT (id) DO UPDATE SET accessToken = EXCLUDED.accessToken
+`
 	_, err := db.db.ExecContext(ctx, sqlStr, id, accessToken)
 
 	if err != nil {
@@ -212,13 +219,13 @@ func (db *DB) GetURLsByUserID(ctx context.Context, userID int) (map[string]strin
 		}
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[string]string)
 
 	for rows.Next() {
 		var shortURL, longURL string
-		if err := rows.Scan(&shortURL, &longURL); err != nil {
+		if err = rows.Scan(&shortURL, &longURL); err != nil {
 			return nil, err
 		}
 		result[shortURL] = longURL
@@ -239,11 +246,17 @@ func (db *DB) SetDeletedFlag(ctx context.Context, ids []string, id int) error {
 
 	sqlStr := "update short_url set deleted_flag = true where user_id = $1 and short_link = ANY($2)"
 
-	_, err := db.db.ExecContext(ctx, sqlStr, id, pq.Array(ids))
+	res, err := db.db.ExecContext(ctx, sqlStr, id, pq.Array(ids))
 
 	if err != nil {
 		return err
 	}
+
+	count, _ := res.RowsAffected()
+	loger.Log.Info("Батч удаление",
+		zap.Int("userID", id),
+		zap.Int64("rowsAffected", count),
+		zap.Strings("ids", ids))
 
 	return nil
 
@@ -260,7 +273,7 @@ func (db *DB) CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool
 	err := db.db.QueryRowContext(ctx, sqlStr, shortLink).Scan(&exists)
 
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	return exists, nil
