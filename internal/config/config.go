@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"path/filepath"
+	"strconv"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -15,6 +16,7 @@ type ConfigVariable struct {
 	DBString        string `env:"DATABASE_DSN"`
 	FlagAuditFile   string `env:"AUDIT_FILE"`
 	FlagAuditURL    string `env:"AUDIT_URL"`
+	EnableHttps     bool   `env:"ENABLE_HTTPS"`
 }
 
 type Config struct {
@@ -24,6 +26,7 @@ type Config struct {
 	DBString        string
 	FlagAuditFile   string
 	FlagAuditURL    string
+	EnableHttps     bool
 }
 
 func CreateConfig() *Config {
@@ -42,6 +45,7 @@ func CreateConfig() *Config {
 	varDBString := configVariable.DBString
 	varAuditFile := configVariable.FlagAuditFile
 	varAuditURL := configVariable.FlagAuditURL
+	varEnableHttps := configVariable.EnableHttps
 
 	//Если нет переменной окружения, но есть аргумент командной строки (флаг), то используется он.
 	flagHost := flag.String("a", "", "host. default value: localhost")
@@ -50,6 +54,7 @@ func CreateConfig() *Config {
 	flagDB := flag.String("d", "", "db connect string")
 	flagAuditFile := flag.String("audit-file", "", "audit file path")
 	flagAuditURL := flag.String("audit-url", "", "audit url path")
+	flagEnableHttps := flag.Bool("s", false, "enable https")
 	flag.Parse()
 
 	if varHost != "" {
@@ -113,6 +118,7 @@ func CreateConfig() *Config {
 	log.Printf("%s", "Переменная resultFileStoragePath в функции CreateConfig: "+resultFileStoragePath)
 	log.Printf("%s", "Переменная resultAuditFile в функции CreateConfig: "+resultAuditFile)
 	log.Printf("%s", "Переменная resultAuditURL в функции CreateConfig: "+resultAuditURL)
+	log.Printf("%s", "Переменная resultEnableHttps в функции CreateConfig: "+strconv.FormatBool(varEnableHttps || *flagEnableHttps))
 
 	return &Config{
 		Host:            resultHost,
@@ -121,5 +127,6 @@ func CreateConfig() *Config {
 		DBString:        resultDBString,
 		FlagAuditFile:   resultAuditFile,
 		FlagAuditURL:    resultAuditURL,
+		EnableHttps:     varEnableHttps || *flagEnableHttps,
 	}
 }

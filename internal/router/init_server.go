@@ -77,5 +77,10 @@ func Run() error {
 
 	go audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
 
+	if cfg.EnableHttps {
+		loger.Log.Info("HTTPS enabled")
+		return srv.ListenAndServeTLS("cert.pem", "key.pem")
+	}
+
 	return srv.ListenAndServe()
 }
