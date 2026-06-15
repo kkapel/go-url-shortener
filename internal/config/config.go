@@ -1,8 +1,10 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -17,6 +19,17 @@ type ConfigVariable struct {
 	FlagAuditFile   string `env:"AUDIT_FILE"`
 	FlagAuditURL    string `env:"AUDIT_URL"`
 	EnableHttps     bool   `env:"ENABLE_HTTPS"`
+	ConfigVariable  string `env:"CONFIG"` // Имя файла конфигурации
+}
+
+type FileConfigVariable struct {
+	ServerAddress   string `json:"server_address"`
+	BaseURL         string `json:"base_url"`
+	FileStoragePath string `json:"file_storage_path"`
+	DBString        string `json:"database_dsn"`
+	FlagAuditFile   string `json:"audit_file"`
+	FlagAuditURL    string `json:"audit_url"`
+	EnableHttps     bool   `json:"enable_https"`
 }
 
 type Config struct {
@@ -55,12 +68,25 @@ func CreateConfig() *Config {
 	flagAuditFile := flag.String("audit-file", "", "audit file path")
 	flagAuditURL := flag.String("audit-url", "", "audit url path")
 	flagEnableHttps := flag.Bool("s", false, "enable https")
+	flagConfig := flag.String("c", "", "config file path")
+
 	flag.Parse()
+
+	// Получаем значения из файла конфигурации, если он указан
+	var fileConfig *FileConfigVariable
+	if *flagConfig != "" {
+		fileConfig, err = LoadConfigFromFile(*flagConfig)
+		if err != nil {
+			log.Fatalf("Error loading config from file: %v", err)
+		}
+	}
 
 	if varHost != "" {
 		resultHost = varHost
 	} else if *flagHost != "" {
 		resultHost = *flagHost
+	} else if fileConfig != nil && fileConfig.ServerAddress != "" {
+		resultHost = fileConfig.ServerAddress
 	} else {
 		resultHost = "localhost:8080"
 	}
@@ -69,6 +95,8 @@ func CreateConfig() *Config {
 		resultGetURLHost = varGetURLHost
 	} else if *flagGetURLHost != "" {
 		resultGetURLHost = *flagGetURLHost
+	} else if fileConfig != nil && fileConfig.BaseURL != "" {
+		resultGetURLHost = fileConfig.BaseURL
 	} else {
 		resultGetURLHost = "http://localhost:8080"
 	}
@@ -77,6 +105,8 @@ func CreateConfig() *Config {
 		resultFileStoragePath = varFileStorePath
 	} else if *flagFileStoragePath != "" {
 		resultFileStoragePath = *flagFileStoragePath
+	} else if fileConfig != nil && fileConfig.FileStoragePath != "" {
+		resultFileStoragePath = fileConfig.FileStoragePath
 	} else {
 		//хардкорный путь задан согласно заданию iter9:
 		//Если нет ни переменной окружения, ни флага, то используется значение по умолчанию.
@@ -89,6 +119,8 @@ func CreateConfig() *Config {
 		resultDBString = varDBString
 	case *flagDB != "":
 		resultDBString = *flagDB
+	case fileConfig != nil && fileConfig.DBString != "":
+		resultDBString = fileConfig.DBString
 	default:
 		resultDBString = ""
 	}
@@ -99,6 +131,8 @@ func CreateConfig() *Config {
 		resultAuditFile = varAuditFile
 	case *flagAuditFile != "":
 		resultAuditFile = *flagAuditFile
+	case fileConfig != nil && fileConfig.FlagAuditFile != "":
+		resultAuditFile = fileConfig.FlagAuditFile
 	default:
 		resultAuditFile = ""
 	}
@@ -109,6 +143,8 @@ func CreateConfig() *Config {
 		resultAuditURL = varAuditURL
 	case *flagAuditURL != "":
 		resultAuditURL = *flagAuditURL
+	case fileConfig != nil && fileConfig.FlagAuditURL != "":
+		resultAuditURL = fileConfig.FlagAuditURL
 	default:
 		resultAuditURL = ""
 	}
@@ -129,4 +165,23 @@ func CreateConfig() *Config {
 		FlagAuditURL:    resultAuditURL,
 		EnableHttps:     varEnableHttps || *flagEnableHttps,
 	}
+}
+
+// LoadConfigFromFile загружает конфигурацию из указанного JSON-файла.
+func LoadConfigFromFile(filePath string) (*FileConfigVariable, error) {
+	// Открываем файл конфигурации
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// Декодируем JSON из файла в структуру FileConfigVariable
+	var config FileConfigVariable
+	err = json.NewDecoder(file).Decode(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }
