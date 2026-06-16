@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"go-url-shortener/internal/audit"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/cookies"
@@ -10,10 +11,14 @@ import (
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 func Run() error {
@@ -58,6 +63,11 @@ func Run() error {
 		IdleTimeout:  120 * time.Second,
 	}
 
+	// Канал для graceful shutdown
+	quit := make(chan os.Signal, 1)
+	// Отлавливаем сигналы прерывания (Ctrl+C) и завершения процесса
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
 	r.Use(cookie.RequestCookies)
@@ -85,5 +95,29 @@ func Run() error {
 		return srv.ListenAndServeTLS("cert.pem", "key.pem")
 	}
 
-	return srv.ListenAndServe()
+	// Запускаем сервер в отдельной горутине
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			loger.Log.Fatal("Server error", zap.Error(err))
+		}
+	}()
+
+	loger.Log.Info("Server started successfully")
+
+	// Ожидаем сигнал для graceful shutdown
+	<-quit
+	loger.Log.Info("Server is shutting down...")
+
+	// Создаем контекст с таймаутом для завершения всех текущих запросов
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Пытаемся корректно завершить работу сервера
+	if err := srv.Shutdown(timeoutCtx); err != nil {
+		loger.Log.Fatal("Server forced to shutdown", zap.Error(err))
+	}
+
+	loger.Log.Info("Server exited gracefully")
+
+	return nil
 }
