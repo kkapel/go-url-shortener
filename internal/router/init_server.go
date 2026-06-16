@@ -104,6 +104,7 @@ func Run() error {
 
 	loger.Log.Info("Server started successfully")
 
+	// Логика для graceful shutdown
 	// Ожидаем сигнал для graceful shutdown
 	<-quit
 	loger.Log.Info("Server is shutting down...")
@@ -117,7 +118,15 @@ func Run() error {
 		loger.Log.Fatal("Server forced to shutdown", zap.Error(err))
 	}
 
-	loger.Log.Info("Server exited gracefully")
+	// Ждем завершения всех горутин, связанных с обработкой запросов
+	service.Wg.Wait()
+	// Закрываем соединение с базой данных
+	err = databaseInstance.Close()
+	if err != nil {
+		loger.Log.Error("Error closing database connection", zap.Error(err))
+	}
+
+	loger.Log.Info("Server shutdown completed")
 
 	return nil
 }
