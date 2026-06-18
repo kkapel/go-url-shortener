@@ -63,10 +63,11 @@ func Run() error {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// Канал для graceful shutdown
-	quit := make(chan os.Signal, 1)
 	// Отлавливаем сигналы прерывания (Ctrl+C) и завершения процесса
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	// Создаем контекст, который будет отменен при получении сигнала
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	// Отменяем контекст при завершении функции
+	defer stop()
 
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
@@ -113,7 +114,7 @@ func Run() error {
 	case err := <-errCh:
 		loger.Log.Error("Server error", zap.Error(err))
 		return err
-	case <-quit:
+	case <-ctx.Done():
 		loger.Log.Info("Server is shutting down...")
 	}
 
@@ -127,7 +128,7 @@ func Run() error {
 	}
 
 	// Ждем завершения всех горутин, связанных с обработкой запросов
-	service.Wg.Wait()
+	service.Wait()
 	if err != nil {
 		loger.Log.Error("Error closing database connection", zap.Error(err))
 	}

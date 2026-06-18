@@ -17,7 +17,7 @@ type ShortenerService struct {
 	fileRepo  *repository.Repsitory
 	localRepo *repository.URL
 	cfg       *config.Config
-	Wg        *sync.WaitGroup
+	wg        *sync.WaitGroup
 }
 
 func NewShortenerService(db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config) *ShortenerService {
@@ -26,7 +26,7 @@ func NewShortenerService(db *repository.DB, file *repository.Repsitory, localRep
 		fileRepo:  file,
 		localRepo: localRepo,
 		cfg:       cfg,
-		Wg:        &sync.WaitGroup{},
+		wg:        &sync.WaitGroup{},
 	}
 
 	return s
@@ -233,10 +233,14 @@ func (s *ShortenerService) DeleteURLs(id int, data []string) {
 	//fanoutCh := fanOut(inputCh)
 	//finalCh := s.fanIn(ctx, id, fanoutCh...)
 
-	s.Wg.Add(1)
+	s.wg.Add(1)
 	go func() {
-		defer s.Wg.Done()
+		defer s.wg.Done()
 		s.batchWorkerDelete(ctx, data, id)
 	}()
 
+}
+
+func (s *ShortenerService) Wait() {
+	s.wg.Wait()
 }
