@@ -90,16 +90,17 @@ func Run() error {
 
 	go audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
 
+	errCh := make(chan error, 1)
 	// Запускаем сервер в отдельной горутине
 	go func() {
 		if cfg.EnableHttps {
 			loger.Log.Info("HTTPS enabled")
 			if err := srv.ListenAndServeTLS("cert.pem", "key.pem"); err != nil && err != http.ErrServerClosed {
-				loger.Log.Fatal("Https Server error", zap.Error(err))
+				errCh <- err
 			}
 		} else {
 			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				loger.Log.Fatal("Server error", zap.Error(err))
+				errCh <- err
 			}
 		}
 	}()
@@ -108,8 +109,13 @@ func Run() error {
 
 	// Логика для graceful shutdown
 	// Ожидаем сигнал для graceful shutdown
-	<-quit
-	loger.Log.Info("Server is shutting down...")
+	select {
+	case err := <-errCh:
+		loger.Log.Error("Server error", zap.Error(err))
+		return err
+	case <-quit:
+		loger.Log.Info("Server is shutting down...")
+	}
 
 	// Создаем контекст с таймаутом для завершения всех текущих запросов
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -117,13 +123,11 @@ func Run() error {
 
 	// Пытаемся корректно завершить работу сервера
 	if err := srv.Shutdown(timeoutCtx); err != nil {
-		loger.Log.Fatal("Server forced to shutdown", zap.Error(err))
+		loger.Log.Error("Server forced to shutdown", zap.Error(err))
 	}
 
 	// Ждем завершения всех горутин, связанных с обработкой запросов
 	service.Wg.Wait()
-	// Закрываем соединение с базой данных
-	err = databaseInstance.Close()
 	if err != nil {
 		loger.Log.Error("Error closing database connection", zap.Error(err))
 	}
