@@ -69,6 +69,7 @@ func CreateConfig() *Config {
 	flagAuditURL := flag.String("audit-url", "", "audit url path")
 	flagEnableHttps := flag.Bool("s", false, "enable https")
 	flagConfig := flag.String("c", "", "config file path")
+	flag.StringVar(flagConfig, "config", "", "config file path")
 
 	flag.Parse()
 
