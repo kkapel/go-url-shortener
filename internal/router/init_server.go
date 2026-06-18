@@ -66,7 +66,7 @@ func Run() error {
 	// Канал для graceful shutdown
 	quit := make(chan os.Signal, 1)
 	// Отлавливаем сигналы прерывания (Ctrl+C) и завершения процесса
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
@@ -90,15 +90,17 @@ func Run() error {
 
 	go audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
 
-	if cfg.EnableHttps {
-		loger.Log.Info("HTTPS enabled")
-		return srv.ListenAndServeTLS("cert.pem", "key.pem")
-	}
-
 	// Запускаем сервер в отдельной горутине
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			loger.Log.Fatal("Server error", zap.Error(err))
+		if cfg.EnableHttps {
+			loger.Log.Info("HTTPS enabled")
+			if err := srv.ListenAndServeTLS("cert.pem", "key.pem"); err != nil && err != http.ErrServerClosed {
+				loger.Log.Fatal("Https Server error", zap.Error(err))
+			}
+		} else {
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				loger.Log.Fatal("Server error", zap.Error(err))
+			}
 		}
 	}()
 
