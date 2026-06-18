@@ -85,6 +85,8 @@ func Run(ctx context.Context) error {
 	})
 
 	g.Go(func() error {
+		// Запускаем обработку аудита в отдельной горутине
+		// Закрытие канала будет происходить после завершения работы сервера
 		audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
 		return nil
 	})
@@ -126,6 +128,7 @@ func Run(ctx context.Context) error {
 		loger.Log.Error("Server forced to shutdown", zap.Error(err))
 	}
 
+	// Закрываем канал аудита, чтобы завершить горутину ProcessAudit
 	close(auditChan)
 
 	// Ждем завершения всех горутин, связанных с обработкой запросов
