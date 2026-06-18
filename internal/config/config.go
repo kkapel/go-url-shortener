@@ -75,8 +75,17 @@ func CreateConfig() *Config {
 
 	// Получаем значения из файла конфигурации, если он указан
 	var fileConfig *FileConfigVariable
-	if *flagConfig != "" {
-		fileConfig, err = LoadConfigFromFile(*flagConfig)
+
+	configFilePath := *flagConfig
+	if *flagConfig == "" {
+		// Если флаг не указан, пишем значение из переменной окружения CONFIG
+		// Если оно пустое, то configFilePath останется пустой строкой, и загрузка из файла не будет происходить
+		configFilePath = configVariable.ConfigVariable
+	}
+
+	// Если путь к файлу конфигурации определён, загружаем конфигурацию из файла
+	if configFilePath != "" {
+		fileConfig, err = LoadConfigFromFile(configFilePath)
 		if err != nil {
 			log.Fatalf("Error loading config from file: %v", err)
 		}
