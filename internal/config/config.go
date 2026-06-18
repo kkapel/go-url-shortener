@@ -164,7 +164,7 @@ func CreateConfig() *Config {
 	log.Printf("%s", "Переменная resultFileStoragePath в функции CreateConfig: "+resultFileStoragePath)
 	log.Printf("%s", "Переменная resultAuditFile в функции CreateConfig: "+resultAuditFile)
 	log.Printf("%s", "Переменная resultAuditURL в функции CreateConfig: "+resultAuditURL)
-	log.Printf("%s", "Переменная EnableHttps в функции CreateConfig: "+strconv.FormatBool(varEnableHttps || *flagEnableHttps))
+	log.Printf("%s", "Переменная EnableHttps в функции CreateConfig: "+strconv.FormatBool(varEnableHttps || *flagEnableHttps || (fileConfig != nil && fileConfig.EnableHttps)))
 
 	return &Config{
 		Host:            resultHost,
@@ -173,7 +173,7 @@ func CreateConfig() *Config {
 		DBString:        resultDBString,
 		FlagAuditFile:   resultAuditFile,
 		FlagAuditURL:    resultAuditURL,
-		EnableHttps:     varEnableHttps || *flagEnableHttps,
+		EnableHttps:     varEnableHttps || *flagEnableHttps || (fileConfig != nil && fileConfig.EnableHttps),
 	}
 }
 
