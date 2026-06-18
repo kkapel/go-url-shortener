@@ -11,17 +11,15 @@ import (
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
 	"net/http"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
-func Run() error {
+func Run(ctx context.Context) error {
 	if err := loger.Initialize("INFO"); err != nil {
 		return err
 	}
@@ -38,7 +36,10 @@ func Run() error {
 		return err
 	}
 
-	service := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg)
+	// Используем errgroup для управления горутинами и их ошибками
+	g, gCtx := errgroup.WithContext(ctx)
+
+	service := service.NewShortenerService(gCtx, databaseInstance, fileRepo, urlLocal, cfg, g)
 	cookie := cookies.NewCookie(service)
 
 	// Закрываем БД-соединение
@@ -63,12 +64,6 @@ func Run() error {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// Отлавливаем сигналы прерывания (Ctrl+C) и завершения процесса
-	// Создаем контекст, который будет отменен при получении сигнала
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
-	// Отменяем контекст при завершении функции
-	defer stop()
-
 	r.Use(loger.RequestLogger)
 	r.Use(encoding.RequestEncoding)
 	r.Use(cookie.RequestCookies)
@@ -89,11 +84,14 @@ func Run() error {
 		r.Get("/{id}", h.APIPageGet)
 	})
 
-	go audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
+	g.Go(func() error {
+		audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
+		return nil
+	})
 
 	errCh := make(chan error, 1)
 	// Запускаем сервер в отдельной горутине
-	go func() {
+	g.Go(func() error {
 		if cfg.EnableHttps {
 			loger.Log.Info("HTTPS enabled")
 			if err := srv.ListenAndServeTLS("cert.pem", "key.pem"); err != nil && err != http.ErrServerClosed {
@@ -104,7 +102,8 @@ func Run() error {
 				errCh <- err
 			}
 		}
-	}()
+		return nil
+	})
 
 	loger.Log.Info("Server started successfully")
 
@@ -114,7 +113,7 @@ func Run() error {
 	case err := <-errCh:
 		loger.Log.Error("Server error", zap.Error(err))
 		return err
-	case <-ctx.Done():
+	case <-gCtx.Done():
 		loger.Log.Info("Server is shutting down...")
 	}
 
@@ -127,10 +126,11 @@ func Run() error {
 		loger.Log.Error("Server forced to shutdown", zap.Error(err))
 	}
 
+	close(auditChan)
+
 	// Ждем завершения всех горутин, связанных с обработкой запросов
-	service.Wait()
-	if err != nil {
-		loger.Log.Error("Error closing database connection", zap.Error(err))
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	loger.Log.Info("Server shutdown completed")

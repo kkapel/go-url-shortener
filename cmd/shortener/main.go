@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"go-url-shortener/internal/router"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // Дефлотные значения, присваевыемые переменным уровня пакета при их объявлении, могут быть перезаписаны на этапе компиляции
@@ -21,7 +25,11 @@ func main() {
 	fmt.Println("Build date:", valueOrNA(buildDate))
 	fmt.Println("Build commit:", valueOrNA(buildCommit))
 
-	if err := router.Run(); err != nil {
+	// Настройка контекста для обработки сигналов завершения работы приложения
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+
+	if err := router.Run(ctx); err != nil {
 		log.Fatal(err)
 	}
 }

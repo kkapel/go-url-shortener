@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"go-url-shortener/internal/config"
@@ -17,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestAPIHandler(t *testing.T) {
@@ -54,7 +56,8 @@ func TestAPIHandler(t *testing.T) {
 	}
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg)
+	errg, ctx := errgroup.WithContext(context.Background())
+	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
 	h := &Handler{
 		Cfg:     testCfg,
 		Service: svc,
@@ -141,7 +144,8 @@ func TestAPIHandlerJSON(t *testing.T) {
 
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg)
+	errg, ctx := errgroup.WithContext(context.Background())
+	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
 	h := &Handler{
 		Cfg:     testCfg,
 		Service: svc,
@@ -234,7 +238,8 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg)
+	errg, ctx := errgroup.WithContext(context.Background())
+	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
 
 	h := &Handler{
 		Cfg:     testCfg,
@@ -273,7 +278,8 @@ func ExampleHandler_APIPagePost() {
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}
-	srv := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg)
+	errg, ctx := errgroup.WithContext(context.Background())
+	srv := service.NewShortenerService(ctx, databaseInstance, fileRepo, urlLocal, cfg, errg)
 	// Создаем хэндлер
 	h := &Handler{
 		Cfg:     cfg,

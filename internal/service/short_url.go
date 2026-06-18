@@ -7,26 +7,28 @@ import (
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
-	"sync"
 
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 type ShortenerService struct {
+	ctx       context.Context
 	dbRepo    *repository.DB
 	fileRepo  *repository.Repsitory
 	localRepo *repository.URL
 	cfg       *config.Config
-	wg        *sync.WaitGroup
+	group     *errgroup.Group
 }
 
-func NewShortenerService(db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config) *ShortenerService {
+func NewShortenerService(ctx context.Context, db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config, group *errgroup.Group) *ShortenerService {
 	s := &ShortenerService{
+		ctx:       ctx,
 		dbRepo:    db,
 		fileRepo:  file,
 		localRepo: localRepo,
 		cfg:       cfg,
-		wg:        &sync.WaitGroup{},
+		group:     group,
 	}
 
 	return s
@@ -145,16 +147,9 @@ func (s *ShortenerService) batchWorkerDelete(ctx context.Context, data []string,
 
 func (s *ShortenerService) DeleteURLs(id int, data []string) {
 
-	ctx := context.Background()
+	s.group.Go(func() error {
+		s.batchWorkerDelete(s.ctx, data, id)
+		return nil
+	})
 
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		s.batchWorkerDelete(ctx, data, id)
-	}()
-
-}
-
-func (s *ShortenerService) Wait() {
-	s.wg.Wait()
 }
