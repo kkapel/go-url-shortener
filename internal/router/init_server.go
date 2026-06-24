@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"go-url-shortener/internal/audit"
 	"go-url-shortener/internal/config"
 	"go-url-shortener/internal/cookies"
@@ -14,9 +15,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
-func Run() error {
+func Run(ctx context.Context) error {
 	if err := loger.Initialize("INFO"); err != nil {
 		return err
 	}
@@ -33,7 +36,10 @@ func Run() error {
 		return err
 	}
 
-	service := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg)
+	// Используем errgroup для управления горутинами и их ошибками
+	g, gCtx := errgroup.WithContext(ctx)
+
+	service := service.NewShortenerService(gCtx, databaseInstance, fileRepo, urlLocal, cfg, g)
 	cookie := cookies.NewCookie(service)
 
 	// Закрываем БД-соединение
@@ -78,7 +84,59 @@ func Run() error {
 		r.Get("/{id}", h.APIPageGet)
 	})
 
-	go audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
+	g.Go(func() error {
+		// Запускаем обработку аудита в отдельной горутине
+		// Закрытие канала будет происходить после завершения работы сервера
+		audit.ProcessAudit(auditChan, cfg.FlagAuditFile, auditMU, cfg.FlagAuditURL)
+		return nil
+	})
 
-	return srv.ListenAndServe()
+	errCh := make(chan error, 1)
+	// Запускаем сервер в отдельной горутине
+	g.Go(func() error {
+		if cfg.EnableHttps {
+			loger.Log.Info("HTTPS enabled")
+			if err := srv.ListenAndServeTLS("cert.pem", "key.pem"); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
+		} else {
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
+		}
+		return nil
+	})
+
+	loger.Log.Info("Server started successfully")
+
+	// Логика для graceful shutdown
+	// Ожидаем сигнал для graceful shutdown
+	select {
+	case err := <-errCh:
+		loger.Log.Error("Server error", zap.Error(err))
+		return err
+	case <-gCtx.Done():
+		loger.Log.Info("Server is shutting down...")
+	}
+
+	// Создаем контекст с таймаутом для завершения всех текущих запросов
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Пытаемся корректно завершить работу сервера
+	if err := srv.Shutdown(timeoutCtx); err != nil {
+		loger.Log.Error("Server forced to shutdown", zap.Error(err))
+	}
+
+	// Закрываем канал аудита, чтобы завершить горутину ProcessAudit
+	close(auditChan)
+
+	// Ждем завершения всех горутин, связанных с обработкой запросов
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	loger.Log.Info("Server shutdown completed")
+
+	return nil
 }

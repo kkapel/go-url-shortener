@@ -7,24 +7,28 @@ import (
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
-	"sync"
 
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
 type ShortenerService struct {
+	ctx       context.Context
 	dbRepo    *repository.DB
 	fileRepo  *repository.Repsitory
 	localRepo *repository.URL
 	cfg       *config.Config
+	group     *errgroup.Group
 }
 
-func NewShortenerService(db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config) *ShortenerService {
+func NewShortenerService(ctx context.Context, db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config, group *errgroup.Group) *ShortenerService {
 	s := &ShortenerService{
+		ctx:       ctx,
 		dbRepo:    db,
 		fileRepo:  file,
 		localRepo: localRepo,
 		cfg:       cfg,
+		group:     group,
 	}
 
 	return s
@@ -134,21 +138,6 @@ func (s *ShortenerService) InsertUserID(ctx context.Context, userID int, newToke
 	return s.dbRepo.InsertUserID(ctx, userID, newToken)
 }
 
-// generator функция для массива строк
-func generatorString(input []string) chan string {
-	inputCh := make(chan string, len(input))
-
-	go func() {
-		defer close(inputCh)
-
-		for _, data := range input {
-			inputCh <- data
-		}
-	}()
-
-	return inputCh
-}
-
 func (s *ShortenerService) batchWorkerDelete(ctx context.Context, data []string, userID int) {
 	err := s.dbRepo.SetDeletedFlag(ctx, data, userID)
 	if err != nil {
@@ -156,80 +145,11 @@ func (s *ShortenerService) batchWorkerDelete(ctx context.Context, data []string,
 	}
 }
 
-// fanOut принимает канал данных, порождает 10 горутин
-func fanOut(inputCh chan string) []chan string {
-	// количество горутин
-	numWorkers := 10
-	// каналы, в которые отправляются результаты
-	channels := make([]chan string, numWorkers)
-
-	for i := 0; i < numWorkers; i++ {
-		channels[i] = make(chan string) // Создаем НОВЫЙ канал для каждого воркера
-	}
-
-	go func() {
-		// Очень важно закрыть ВСЕ выходящие каналы, когда входящий иссякнет
-		defer func() {
-			for _, ch := range channels {
-				close(ch)
-			}
-		}()
-
-		// Распределяем данные по кругу (Round Robin)
-		i := 0
-		for data := range inputCh {
-			channels[i] <- data
-			i = (i + 1) % numWorkers
-		}
-	}()
-
-	// возвращаем слайс каналов
-	return channels
-}
-
-// fanIn объединяет несколько каналов resultChs в один.
-func (s *ShortenerService) fanIn(ctx context.Context, userID int, resultChs ...chan string) chan string {
-	// конечный выходной канал в который отправляем данные из всех каналов из слайса, назовём его результирующим
-	finalCh := make(chan string)
-
-	// понадобится для ожидания всех горутин
-	var wg sync.WaitGroup
-
-	// перебираем все входящие каналы
-	for _, ch := range resultChs {
-
-		// инкрементируем счётчик горутин, которые нужно подождать
-		wg.Add(1)
-
-		go func() {
-			// откладываем сообщение о том, что горутина завершилась
-			defer wg.Done()
-
-			// получаем данные из канала
-			for data := range ch {
-				finalCh <- data
-			}
-		}()
-	}
-
-	go func() {
-		// ждём завершения всех горутин
-		wg.Wait()
-		// когда все горутины завершились, закрываем результирующий канал
-		close(finalCh)
-	}()
-
-	// возвращаем результирующий канал
-	return finalCh
-}
-
 func (s *ShortenerService) DeleteURLs(id int, data []string) {
 
-	ctx := context.Background()
-
-	//inputCh := generatorString(data)
-	//fanoutCh := fanOut(inputCh)
-	//finalCh := s.fanIn(ctx, id, fanoutCh...)
-	go s.batchWorkerDelete(ctx, data, id)
+	s.group.Go(func() error {
+		s.batchWorkerDelete(s.ctx, data, id)
+		return nil
+	})
 
 }
