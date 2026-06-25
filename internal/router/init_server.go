@@ -71,6 +71,7 @@ func Run(ctx context.Context) error {
 	r.Post("/api/shorten/batch", h.APIPagePostBatch)
 	r.Get("/ping", h.APIGetPing)
 	r.Get("/api/user/urls", h.APIPageGetUserURLs)
+	r.Get("/api/internal/stats", h.APIGetStats)
 	r.Delete("/api/user/urls", h.APIDeleteURLs)
 
 	// Создаем отдельный канал для аудита и запускаем go-рутину

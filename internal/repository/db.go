@@ -279,3 +279,18 @@ func (db *DB) CheckFlagDeleteExists(ctx context.Context, shortLink string) (bool
 	return exists, nil
 
 }
+
+func (db *DB) GetStats(ctx context.Context) (int, int, error) {
+	if db == nil {
+		return 0, 0, nil
+	}
+
+	var urlsCount, usersCount int
+	sqlStr := "SELECT COUNT(short_link), COUNT(DISTINCT user_id) FROM short_url"
+	err := db.db.QueryRowContext(ctx, sqlStr).Scan(&urlsCount, &usersCount)
+
+	if err != nil {
+		return 0, 0, err
+	}
+	return urlsCount, usersCount, nil
+}

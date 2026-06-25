@@ -42,6 +42,11 @@ type ShortURLByUserResponse struct {
 	OriginalURL string `json:"original_url"`
 }
 
+type StatsResponse struct {
+	URLs  int `json:"urls"`  // Количество сокращенных URL
+	Users int `json:"users"` // Количество пользователей в сервисе
+}
+
 // APIPagePost - Post запрос на формирование сокращенного URL
 func (h *Handler) APIPagePost(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
@@ -418,6 +423,50 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 		go h.Service.DeleteURLs(id, arrayURLs)
 
 		res.WriteHeader(http.StatusAccepted)
+
+	default:
+		errorResponse(res)
+	}
+}
+
+// APIGetStats - Get-запрос на получение статистики
+func (h *Handler) APIGetStats(res http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		defer req.Body.Close()
+
+		// Получаем статистику из сервиса
+		stats, err := h.Service.GetStats(req.Context())
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIGetStats", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		var statsResponse StatsResponse
+		statsResponse.URLs = stats.URLs
+		statsResponse.Users = stats.Users
+
+		// Сериализуем ответ
+		resp, err := json.Marshal(statsResponse)
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIGetStats", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		// Проставляем хедеры
+		res.Header().Set("content-type", "application/json")
+		loger.Log.Info("APIGetStats", zap.String("result", string(resp)))
+
+		res.WriteHeader(http.StatusOK)
+		_, err = res.Write(resp)
+
+		if err != nil {
+			loger.Log.Error("api_handler.go", zap.String("Function APIGetStats", err.Error()))
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		errorResponse(res)

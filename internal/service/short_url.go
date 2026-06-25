@@ -12,6 +12,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type Stats struct {
+	URLs  int // Количество сокращенных URL
+	Users int // Количество пользователей в сервисе
+}
+
 type ShortenerService struct {
 	ctx       context.Context
 	dbRepo    *repository.DB
@@ -152,4 +157,12 @@ func (s *ShortenerService) DeleteURLs(id int, data []string) {
 		return nil
 	})
 
+}
+
+func (s *ShortenerService) GetStats(ctx context.Context) (Stats, error) {
+	urls, users, err := s.dbRepo.GetStats(ctx)
+	if err != nil {
+		return Stats{}, err
+	}
+	return Stats{URLs: urls, Users: users}, nil
 }
