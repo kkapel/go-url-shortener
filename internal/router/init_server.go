@@ -7,6 +7,7 @@ import (
 	"go-url-shortener/internal/cookies"
 	"go-url-shortener/internal/encoding"
 	"go-url-shortener/internal/handler"
+	"go-url-shortener/internal/ip"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
@@ -71,7 +72,6 @@ func Run(ctx context.Context) error {
 	r.Post("/api/shorten/batch", h.APIPagePostBatch)
 	r.Get("/ping", h.APIGetPing)
 	r.Get("/api/user/urls", h.APIPageGetUserURLs)
-	r.Get("/api/internal/stats", h.APIGetStats)
 	r.Delete("/api/user/urls", h.APIDeleteURLs)
 
 	// Создаем отдельный канал для аудита и запускаем go-рутину
@@ -83,6 +83,11 @@ func Run(ctx context.Context) error {
 		r.Post("/", h.APIPagePost)
 		r.Post("/api/shorten", h.APIPagePostJSON)
 		r.Get("/{id}", h.APIPageGet)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(ip.CheckIP(cfg.TrustedSubnet))
+		r.Get("/api/internal/stats", h.APIGetStats)
 	})
 
 	g.Go(func() error {

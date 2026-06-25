@@ -20,6 +20,7 @@ type ConfigVariable struct {
 	FlagAuditURL    string `env:"AUDIT_URL"`
 	EnableHttps     bool   `env:"ENABLE_HTTPS"`
 	ConfigVariable  string `env:"CONFIG"` // Имя файла конфигурации
+	TrustedSubnet   string `env:"TRUSTED_SUBNET"`
 }
 
 type FileConfigVariable struct {
@@ -30,6 +31,7 @@ type FileConfigVariable struct {
 	FlagAuditFile   string `json:"audit_file"`
 	FlagAuditURL    string `json:"audit_url"`
 	EnableHttps     bool   `json:"enable_https"`
+	TrustedSubnet   string `json:"trusted_subnet"`
 }
 
 type Config struct {
@@ -40,12 +42,13 @@ type Config struct {
 	FlagAuditFile   string
 	FlagAuditURL    string
 	EnableHttps     bool
+	TrustedSubnet   string
 }
 
 func CreateConfig() *Config {
 	//Если указана переменная окружения, то используется она.
 	var configVariable ConfigVariable
-	var resultHost, resultGetURLHost, resultFileStoragePath, resultDBString, resultAuditFile, resultAuditURL string
+	var resultHost, resultGetURLHost, resultFileStoragePath, resultDBString, resultAuditFile, resultAuditURL, resultTrustedSubnet string
 
 	err := env.Parse(&configVariable)
 	if err != nil {
@@ -59,6 +62,7 @@ func CreateConfig() *Config {
 	varAuditFile := configVariable.FlagAuditFile
 	varAuditURL := configVariable.FlagAuditURL
 	varEnableHttps := configVariable.EnableHttps
+	varTrustedSubnet := configVariable.TrustedSubnet
 
 	//Если нет переменной окружения, но есть аргумент командной строки (флаг), то используется он.
 	flagHost := flag.String("a", "", "host. default value: localhost")
@@ -70,6 +74,7 @@ func CreateConfig() *Config {
 	flagEnableHttps := flag.Bool("s", false, "enable https")
 	flagConfig := flag.String("c", "", "config file path")
 	flag.StringVar(flagConfig, "config", "", "config file path")
+	flagTrustedSubnet := flag.String("t", "", "trusted subnet")
 
 	flag.Parse()
 
@@ -159,11 +164,24 @@ func CreateConfig() *Config {
 		resultAuditURL = ""
 	}
 
+	// trusted subnet
+	switch {
+	case varTrustedSubnet != "":
+		resultTrustedSubnet = varTrustedSubnet
+	case *flagTrustedSubnet != "":
+		resultTrustedSubnet = *flagTrustedSubnet
+	case fileConfig != nil && fileConfig.TrustedSubnet != "":
+		resultTrustedSubnet = fileConfig.TrustedSubnet
+	default:
+		resultTrustedSubnet = ""
+	}
+
 	log.Printf("%s", "Переменная varFileStorePath в функции CreateConfig: "+varFileStorePath)
 	log.Printf("%s", "Переменная flagFileStoragePath в функции CreateConfig: "+*flagFileStoragePath)
 	log.Printf("%s", "Переменная resultFileStoragePath в функции CreateConfig: "+resultFileStoragePath)
 	log.Printf("%s", "Переменная resultAuditFile в функции CreateConfig: "+resultAuditFile)
 	log.Printf("%s", "Переменная resultAuditURL в функции CreateConfig: "+resultAuditURL)
+	log.Printf("%s", "Переменная resultTrustedSubnet в функции CreateConfig: "+resultTrustedSubnet)
 	log.Printf("%s", "Переменная EnableHttps в функции CreateConfig: "+strconv.FormatBool(varEnableHttps || *flagEnableHttps || (fileConfig != nil && fileConfig.EnableHttps)))
 
 	return &Config{
@@ -174,6 +192,7 @@ func CreateConfig() *Config {
 		FlagAuditFile:   resultAuditFile,
 		FlagAuditURL:    resultAuditURL,
 		EnableHttps:     varEnableHttps || *flagEnableHttps || (fileConfig != nil && fileConfig.EnableHttps),
+		TrustedSubnet:   resultTrustedSubnet,
 	}
 }
 
