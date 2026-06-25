@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-url-shortener/internal/config"
+	"go-url-shortener/internal/ip"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
 	"go-url-shortener/internal/service"
@@ -300,4 +301,87 @@ func ExampleHandler_APIPagePost() {
 	// Status: 201
 	// Content: text/plain
 
+}
+
+func TestAPIGetStats(t *testing.T) {
+	tests := []struct {
+		name          string
+		trustedSubnet string
+		xRealIP       string
+		wantCode      int
+		wantURLs      int
+		wantUsers     int
+	}{
+		{
+			name:          "доступ разрешён - IP в подсети",
+			trustedSubnet: "192.168.1.0/24",
+			xRealIP:       "192.168.1.100",
+			wantCode:      200,
+			wantURLs:      0,
+			wantUsers:     0,
+		},
+		{
+			name:          "доступ запрещён - пустой trusted_subnet",
+			trustedSubnet: "",
+			xRealIP:       "192.168.1.100",
+			wantCode:      403,
+		},
+		{
+			name:          "доступ запрещён - IP не в подсети",
+			trustedSubnet: "192.168.1.0/24",
+			xRealIP:       "10.0.0.1",
+			wantCode:      403,
+		},
+		{
+			name:          "доступ запрещён - заголовок X-Real-IP отсутствует",
+			trustedSubnet: "192.168.1.0/24",
+			xRealIP:       "",
+			wantCode:      403,
+		},
+	}
+
+	testCfg := &config.Config{
+		Host:       "localhost:8080",
+		GetURLHost: "http://localhost:8080",
+	}
+
+	fileRepo := repository.CreateRepository()
+	urlLocal := repository.NewURLRepository()
+	errg, ctx := errgroup.WithContext(context.Background())
+	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
+	h := &Handler{
+		Cfg:     testCfg,
+		Service: svc,
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
+			if test.xRealIP != "" {
+				req.Header.Set("X-Real-IP", test.xRealIP)
+			}
+
+			rec := httptest.NewRecorder()
+
+			// Оборачиваем хендлер в middleware CheckIP, как это сделано в роутере
+			handler := ip.CheckIP(test.trustedSubnet)(http.HandlerFunc(h.APIGetStats))
+			handler.ServeHTTP(rec, req)
+
+			result := rec.Result()
+			defer func() { _ = result.Body.Close() }()
+
+			assert.Equal(t, test.wantCode, result.StatusCode)
+
+			if test.wantCode == http.StatusOK {
+				assert.Equal(t, "application/json", result.Header.Get("Content-Type"))
+
+				var stats StatsResponse
+				err := json.Unmarshal(rec.Body.Bytes(), &stats)
+				require.NoError(t, err)
+
+				assert.Equal(t, test.wantURLs, stats.URLs)
+				assert.Equal(t, test.wantUsers, stats.Users)
+			}
+		})
+	}
 }
