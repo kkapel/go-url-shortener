@@ -127,3 +127,7 @@ func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, in *emptypb.Empt
 	return &pb.UserURLsResponse{Url: urlData}, nil
 
 }
+
+func NewShortenerGRPCServer(svc *service.ShortenerService, cfg *config.Config) *ShortenerGRPCServer {
+	return &ShortenerGRPCServer{service: svc, cfg: cfg}
+}

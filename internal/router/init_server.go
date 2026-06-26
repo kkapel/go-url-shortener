@@ -10,14 +10,19 @@ import (
 	"go-url-shortener/internal/ip"
 	"go-url-shortener/internal/loger"
 	"go-url-shortener/internal/repository"
+	serverGRPC "go-url-shortener/internal/server_grpc"
 	"go-url-shortener/internal/service"
+	"net"
 	"net/http"
 	"sync"
 	"time"
 
+	pb "go-url-shortener/internal/proto"
+
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 )
 
 func Run(ctx context.Context) error {
@@ -42,6 +47,14 @@ func Run(ctx context.Context) error {
 
 	service := service.NewShortenerService(gCtx, databaseInstance, fileRepo, urlLocal, cfg, g)
 	cookie := cookies.NewCookie(service)
+
+	// Стартуем grpc
+	grpc_server, err := startGRPCServer(service, cfg)
+	if err != nil {
+		return err
+	}
+
+	defer grpc_server.GracefulStop()
 
 	// Закрываем БД-соединение
 	if databaseInstance != nil {
@@ -145,4 +158,32 @@ func Run(ctx context.Context) error {
 	loger.Log.Info("Server shutdown completed")
 
 	return nil
+}
+
+// Функция для запуска grpc-сервера
+func startGRPCServer(svc *service.ShortenerService, cfg *config.Config) (*grpc.Server, error) {
+	// 1. Открываем listener на нужном порту
+	listener, err := net.Listen("tcp", cfg.Grpc)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Создаём экземпляр gRPC-сервера
+	grpcServer := grpc.NewServer()
+
+	// 3. Создаём свой сервер с бизнес-логикой
+	srv := serverGRPC.NewShortenerGRPCServer(svc, cfg)
+
+	// 4. Регистрируем его в gRPC-сервере
+	pb.RegisterShortenerServiceServer(grpcServer, srv)
+
+	// 5. Запускаем в горутине, чтобы не блокировать main
+	go func() {
+		loger.Log.Info("Grpc server starts")
+		if err := grpcServer.Serve(listener); err != nil {
+			loger.Log.Error("ошибка работы gRPC-сервера", zap.Error(err))
+		}
+	}()
+
+	return grpcServer, nil
 }
