@@ -54,12 +54,12 @@ func Run(ctx context.Context) error {
 		return err
 	}
 
-	defer grpc_server.GracefulStop()
-
 	// Закрываем БД-соединение
 	if databaseInstance != nil {
 		defer func() { _ = databaseInstance.Close() }()
 	}
+
+	defer grpc_server.GracefulStop()
 
 	loger.Log.Info("Init server running")
 
