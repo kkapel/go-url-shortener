@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 func Run(ctx context.Context) error {
@@ -168,8 +169,14 @@ func startGRPCServer(svc *service.ShortenerService, cfg *config.Config) (*grpc.S
 		return nil, err
 	}
 
+	// Загружаем TLS-сертификаты
+	creds, err := credentials.NewServerTLSFromFile("cert.pem", "key.pem")
+	if err != nil {
+		return nil, err
+	}
+
 	// 2. Создаём экземпляр gRPC-сервера
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
 
 	// 3. Создаём свой сервер с бизнес-логикой
 	srv := serverGRPC.NewShortenerGRPCServer(svc, cfg)
