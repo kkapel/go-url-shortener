@@ -7,7 +7,6 @@ import (
 	"go-url-shortener/internal/cookies"
 	pb "go-url-shortener/internal/proto"
 	"go-url-shortener/internal/service"
-	ShortenerService "go-url-shortener/internal/service"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -19,7 +18,7 @@ import (
 type ShortenerGRPCServer struct {
 	pb.UnimplementedShortenerServiceServer
 	// сюда передадим сервис с бизнес-логикой
-	service *ShortenerService.ShortenerService
+	service *service.ShortenerService
 	cfg     *config.Config
 }
 
