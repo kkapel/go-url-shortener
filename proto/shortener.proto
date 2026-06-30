@@ -4,12 +4,10 @@ package shortener;
 
 option go_package = "go-url-shortener/internal/proto";
 
-import "google/protobuf/empty.proto";
-
 service ShortenerService {
   rpc ShortenURL (URLShortenRequest) returns (URLShortenResponse);
   rpc ExpandURL (URLExpandRequest) returns (URLExpandResponse);
-  rpc ListUserURLs (google.protobuf.Empty) returns (UserURLsResponse);
+  rpc ListUserURLs (ListUserURLsRequest) returns (UserURLsResponse);
 }
 
 message URLShortenRequest {
@@ -36,4 +34,10 @@ message UserURLsResponse {
 message URLData {
   string short_url = 1;
   string original_url = 2;
+}
+
+// Пустой запрос для получения URL пользователя.
+// Объявлен отдельным типом (а не google.protobuf.Empty),
+// чтобы можно было расширять без потери обратной совместимости.
+message ListUserURLsRequest {
 }

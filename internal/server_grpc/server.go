@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type ShortenerGRPCServer struct {
@@ -85,7 +84,7 @@ func (s *ShortenerGRPCServer) ExpandURL(ctx context.Context, req *pb.URLExpandRe
 
 }
 
-func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, in *emptypb.Empty) (*pb.UserURLsResponse, error) {
+func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, in *pb.ListUserURLsRequest) (*pb.UserURLsResponse, error) {
 
 	//Получаем токен из metadata
 	md, ok := metadata.FromIncomingContext(ctx)

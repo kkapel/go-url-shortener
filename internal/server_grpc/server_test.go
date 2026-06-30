@@ -18,7 +18,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // setupTestServer поднимает gRPC-сервер на in-memory listener
@@ -120,7 +119,7 @@ func TestListUserURLsNoToken(t *testing.T) {
 	defer cleanup()
 
 	// Без metadata — должна быть ошибка Unauthenticated
-	_, err := client.ListUserURLs(context.Background(), &emptypb.Empty{})
+	_, err := client.ListUserURLs(context.Background(), &pb.ListUserURLsRequest{})
 	if err == nil {
 		t.Fatal("ожидалась ошибка Unauthenticated, но её нет")
 	}
@@ -136,7 +135,7 @@ func TestListUserURLsWithToken(t *testing.T) {
 
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", token)
 
-	resp, err := client.ListUserURLs(ctx, &emptypb.Empty{})
+	resp, err := client.ListUserURLs(ctx, &pb.ListUserURLsRequest{})
 	if err != nil {
 		t.Fatalf("ListUserURLs вернул ошибку: %v", err)
 	}
