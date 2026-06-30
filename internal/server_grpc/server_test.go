@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -73,9 +74,9 @@ func TestShortenAndExpand(t *testing.T) {
 	originalURL := "https://example.com/very/long/url"
 
 	// 1. Сокращаем URL
-	shortResp, err := client.ShortenURL(ctx, &pb.URLShortenRequest{
-		Url: &originalURL,
-	})
+	shortResp, err := client.ShortenURL(ctx, pb.URLShortenRequest_builder{
+		Url: proto.String(originalURL),
+	}.Build())
 	if err != nil {
 		t.Fatalf("ShortenURL вернул ошибку: %v", err)
 	}
@@ -89,9 +90,9 @@ func TestShortenAndExpand(t *testing.T) {
 	id := shortURL[len("http://localhost:8080/"):]
 
 	// 2. Разворачиваем обратно
-	expandResp, err := client.ExpandURL(ctx, &pb.URLExpandRequest{
-		Id: &id,
-	})
+	expandResp, err := client.ExpandURL(ctx, pb.URLExpandRequest_builder{
+		Id: proto.String(id),
+	}.Build())
 	if err != nil {
 		t.Fatalf("ExpandURL вернул ошибку: %v", err)
 	}
@@ -106,9 +107,9 @@ func TestShortenEmptyURL(t *testing.T) {
 	defer cleanup()
 
 	emptyURL := ""
-	_, err := client.ShortenURL(context.Background(), &pb.URLShortenRequest{
-		Url: &emptyURL,
-	})
+	_, err := client.ShortenURL(context.Background(), pb.URLShortenRequest_builder{
+		Url: proto.String(emptyURL),
+	}.Build())
 	if err == nil {
 		t.Fatal("ожидалась ошибка для пустого URL, но её нет")
 	}

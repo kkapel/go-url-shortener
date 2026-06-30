@@ -44,9 +44,9 @@ func (s *ShortenerGRPCServer) ShortenURL(ctx context.Context, req *pb.URLShorten
 		return nil, status.Error(codes.AlreadyExists, result)
 	}
 
-	return &pb.URLShortenResponse{
-		Result: &result,
-	}, nil
+	return pb.URLShortenResponse_builder{
+		Result: proto.String(result),
+	}.Build(), nil
 
 }
 
@@ -79,9 +79,9 @@ func (s *ShortenerGRPCServer) ExpandURL(ctx context.Context, req *pb.URLExpandRe
 		return nil, status.Errorf(codes.Internal, "Ошибка получения URL: %v", err)
 	}
 
-	return &pb.URLExpandResponse{
+	return pb.URLExpandResponse_builder{
 		Result: proto.String(longURL),
-	}, nil
+	}.Build(), nil
 
 }
 
@@ -117,13 +117,13 @@ func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, in *emptypb.Empt
 	for shortURL, longURL := range urls {
 		short := s.cfg.GetURLHost + "/" + shortURL
 		long := longURL
-		urlData = append(urlData, &pb.URLData{
-			ShortUrl:    &short,
-			OriginalUrl: &long,
-		})
+		urlData = append(urlData, pb.URLData_builder{
+			ShortUrl:    proto.String(short),
+			OriginalUrl: proto.String(long),
+		}.Build())
 	}
 
-	return &pb.UserURLsResponse{Url: urlData}, nil
+	return pb.UserURLsResponse_builder{Url: urlData}.Build(), nil
 
 }
 
