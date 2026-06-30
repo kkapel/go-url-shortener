@@ -7,6 +7,7 @@ import (
 	"go-url-shortener/internal/cookies"
 	pb "go-url-shortener/internal/proto"
 	"go-url-shortener/internal/service"
+	"net/url"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -114,11 +115,13 @@ func (s *ShortenerGRPCServer) ListUserURLs(ctx context.Context, in *pb.ListUserU
 	// Формируем ответ
 	var urlData []*pb.URLData
 	for shortURL, longURL := range urls {
-		short := s.cfg.GetURLHost + "/" + shortURL
-		long := longURL
+		fullShortURL, err := url.JoinPath(s.cfg.GetURLHost, shortURL)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "ошибка формирования URL: %v", err)
+		}
 		urlData = append(urlData, pb.URLData_builder{
-			ShortUrl:    proto.String(short),
-			OriginalUrl: proto.String(long),
+			ShortUrl:    proto.String(fullShortURL),
+			OriginalUrl: proto.String(longURL),
 		}.Build())
 	}
 
