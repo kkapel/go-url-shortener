@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"go-url-shortener/internal/config"
@@ -57,8 +56,8 @@ func TestAPIHandler(t *testing.T) {
 	}
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	errg, ctx := errgroup.WithContext(context.Background())
-	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
+	var errg errgroup.Group
+	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg, &errg)
 	h := &Handler{
 		Cfg:     testCfg,
 		Service: svc,
@@ -145,8 +144,8 @@ func TestAPIHandlerJSON(t *testing.T) {
 
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	errg, ctx := errgroup.WithContext(context.Background())
-	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
+	var errg errgroup.Group
+	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg, &errg)
 	h := &Handler{
 		Cfg:     testCfg,
 		Service: svc,
@@ -239,8 +238,8 @@ func SkipTestAPIPagePostBatch(t *testing.T) {
 
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	errg, ctx := errgroup.WithContext(context.Background())
-	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
+	var errg errgroup.Group
+	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg, &errg)
 
 	h := &Handler{
 		Cfg:     testCfg,
@@ -279,8 +278,8 @@ func ExampleHandler_APIPagePost() {
 	if err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}
-	errg, ctx := errgroup.WithContext(context.Background())
-	srv := service.NewShortenerService(ctx, databaseInstance, fileRepo, urlLocal, cfg, errg)
+	var errg errgroup.Group
+	srv := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg, &errg)
 	// Создаем хэндлер
 	h := &Handler{
 		Cfg:     cfg,
@@ -347,8 +346,8 @@ func TestAPIGetStats(t *testing.T) {
 
 	fileRepo := repository.CreateRepository()
 	urlLocal := repository.NewURLRepository()
-	errg, ctx := errgroup.WithContext(context.Background())
-	svc := service.NewShortenerService(ctx, nil, fileRepo, urlLocal, testCfg, errg)
+	var errg errgroup.Group
+	svc := service.NewShortenerService(nil, fileRepo, urlLocal, testCfg, &errg)
 	h := &Handler{
 		Cfg:     testCfg,
 		Service: svc,

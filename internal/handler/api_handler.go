@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"go-url-shortener/internal/config"
@@ -420,7 +421,7 @@ func (h *Handler) APIDeleteURLs(res http.ResponseWriter, req *http.Request) {
 		}
 
 		// Взаимодействуем с сервисом и БД в отдельной go-рутине
-		go h.Service.DeleteURLs(id, arrayURLs)
+		go h.Service.DeleteURLs(context.Background(), id, arrayURLs)
 
 		res.WriteHeader(http.StatusAccepted)
 

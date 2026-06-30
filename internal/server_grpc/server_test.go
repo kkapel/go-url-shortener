@@ -29,9 +29,9 @@ func setupTestServer(t *testing.T) (pb.ShortenerServiceClient, func()) {
 	}
 
 	// Сервис без БД — работает на локальном репозитории (in-memory)
-	g, gCtx := errgroup.WithContext(context.Background())
+	var g errgroup.Group
 	urlLocal := repository.NewURLRepository()
-	svc := service.NewShortenerService(gCtx, nil, nil, urlLocal, cfg, g)
+	svc := service.NewShortenerService(nil, nil, urlLocal, cfg, &g)
 
 	// Поднимаем сервер на случайном свободном порту
 	listener, err := net.Listen("tcp", ":0")

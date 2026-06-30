@@ -45,7 +45,7 @@ func Run(ctx context.Context) error {
 	// Используем errgroup для управления горутинами и их ошибками
 	g, gCtx := errgroup.WithContext(ctx)
 
-	service := service.NewShortenerService(gCtx, databaseInstance, fileRepo, urlLocal, cfg, g)
+	service := service.NewShortenerService(databaseInstance, fileRepo, urlLocal, cfg, g)
 	cookie := cookies.NewCookie(service)
 
 	// Стартуем grpc
