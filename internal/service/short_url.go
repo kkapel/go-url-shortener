@@ -12,8 +12,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type Stats struct {
+	URLs  int // Количество сокращенных URL
+	Users int // Количество пользователей в сервисе
+}
+
 type ShortenerService struct {
-	ctx       context.Context
 	dbRepo    *repository.DB
 	fileRepo  *repository.Repsitory
 	localRepo *repository.URL
@@ -21,9 +25,8 @@ type ShortenerService struct {
 	group     *errgroup.Group
 }
 
-func NewShortenerService(ctx context.Context, db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config, group *errgroup.Group) *ShortenerService {
+func NewShortenerService(db *repository.DB, file *repository.Repsitory, localRepo *repository.URL, cfg *config.Config, group *errgroup.Group) *ShortenerService {
 	s := &ShortenerService{
-		ctx:       ctx,
 		dbRepo:    db,
 		fileRepo:  file,
 		localRepo: localRepo,
@@ -145,11 +148,19 @@ func (s *ShortenerService) batchWorkerDelete(ctx context.Context, data []string,
 	}
 }
 
-func (s *ShortenerService) DeleteURLs(id int, data []string) {
+func (s *ShortenerService) DeleteURLs(ctx context.Context, id int, data []string) {
 
 	s.group.Go(func() error {
-		s.batchWorkerDelete(s.ctx, data, id)
+		s.batchWorkerDelete(ctx, data, id)
 		return nil
 	})
 
+}
+
+func (s *ShortenerService) GetStats(ctx context.Context) (Stats, error) {
+	urls, users, err := s.dbRepo.GetStats(ctx)
+	if err != nil {
+		return Stats{}, err
+	}
+	return Stats{URLs: urls, Users: users}, nil
 }
